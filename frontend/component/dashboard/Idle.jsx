@@ -4,32 +4,22 @@ import { marketplace } from "canisters/marketplace"
 import { dip721 } from "canisters/dip721"
 import AppContext from "../../AppContext"
 import { Principal } from "@dfinity/principal"
-import { Nat64 } from "@dfinity/candid/lib/cjs/idl"
+import NftCard from "./NftCard"
 
 export default function IdleList () {
   const { userPrincipal, setUserPrincipal } = React.useContext(AppContext)
   const [idleNfts, setIdleNfts] = React.useState([])
   //setUserPrincipal("t5f3o-4jc2c-kedu6-zkclt-jygbq-llpj7-o5sjc-nlwal-l6mis-zk4mq-jae")
 
-  function fetchNftFromDip721 (userPrincipal) {
+  async function fetchNftFromDip721 (userPrincipal) {
     userPrincipal = Principal.fromText("t5f3o-4jc2c-kedu6-zkclt-jygbq-llpj7-o5sjc-nlwal-l6mis-zk4mq-jae")
     console.log("user principal is: " + userPrincipal.toText())
     let uniDip721Nfts = [];
-    dip721.getTokenIdsForUserDip721(userPrincipal)
-      .then(tokenIds => {
-        Promise.all(tokenIds.map(id => dip721.getMetadataDip721(id)))
-          .then(metadatasDip721 => {
-            metadatasDip721.map(metadata => uniDip721Nft(metadata))
-              .forEach(element => {
-                uniDip721Nfts.push(element)
-              });
-
-          })
-      })
-      .catch(err => console.log(err))
-    return uniDip721Nfts;
+    let tokenIds = await dip721.getTokenIdsForUserDip721(userPrincipal)
+    return (await Promise.all(tokenIds.map(id => dip721.getMetadataDip721(id))))
+      .map(e => dip721Adapter(e))
   }
-  function uniDip721Nft (metadataDip721) {
+  function dip721Adapter (metadataDip721) {
 
     if (!metadataDip721.Ok) return null
     let uniData = {}
@@ -39,15 +29,20 @@ export default function IdleList () {
     metadata.key_val_data.forEach(e => {
       uniData[e.key] = e.val.TextContent
     })
-    return metadataDip721
+    return uniData
   }
   React.useEffect(() => {
     //TODO, 针对每一个第三方nft项目实现一个子类,来做差异化处理
     if (true) {
-      let nfts = fetchNftFromDip721(userPrincipal)
-      setIdleNfts([...idleNfts, ...nfts])
+      (async () => {
+        let nfts = await fetchNftFromDip721(userPrincipal)
+        setIdleNfts(nfts)
+        console.log("data:" + JSON.stringify(nfts))
+      })()
     }
+
   }, [userPrincipal])
+
 
   return (
     <>
@@ -65,7 +60,14 @@ export default function IdleList () {
           Rented
         </Link>
       </div>
-      <div>idle</div>
+      <div className="flex flex-row flex-wrap">
+        {
+          idleNfts.map((e, index) => (<NftCard key={index} location={e.location}></NftCard>))
+        }
+      </div>
+
     </>
+
+
   )
 }
