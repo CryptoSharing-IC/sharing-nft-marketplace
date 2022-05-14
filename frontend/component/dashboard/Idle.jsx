@@ -2,13 +2,14 @@ import React from "react"
 import { Link } from "react-router-dom"
 import { marketplace } from "canisters/marketplace"
 import { dip721 } from "canisters/dip721"
-import AppContext from "../../AppContext"
+
 import { Principal } from "@dfinity/principal"
-import NftCard from "./NftCard"
+import NftCard from "./Dip721Card"
+import Dip721IdleCardList from "./Dip721IdleCardList"
 
 export default function IdleList () {
-  const { userPrincipal, setUserPrincipal } = React.useContext(AppContext)
-  const [idleNfts, setIdleNfts] = React.useState([])
+  
+  
   //setUserPrincipal("t5f3o-4jc2c-kedu6-zkclt-jygbq-llpj7-o5sjc-nlwal-l6mis-zk4mq-jae")
 
   async function fetchNftFromDip721 (userPrincipal) {
@@ -61,10 +62,10 @@ export default function IdleList () {
         </Link>
       </div>
       <div className="flex flex-row flex-wrap">
-        {
-          idleNfts.map((e, index) => (<NftCard key={index} location={e.location}></NftCard>))
-        }
+        <Dip721IdleCardList></Dip721IdleCardList>
       </div>
+
+
 
     </>
 
