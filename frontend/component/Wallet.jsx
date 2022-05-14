@@ -28,7 +28,7 @@ export default function Wallet () {
             dark
             title={title}
             host="http://127.0.0.1:8000"
-            whitelist={["r7inp-6aaaa-aaaaa-aaabq-cai", "ryjl3-tyaaa-aaaaa-aaaba-cai"]}
+            whitelist={["r7inp-6aaaa-aaaaa-aaabq-cai"]}
             onConnectCallback={() => setConnected(true)}
         />
     )

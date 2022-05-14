@@ -8,7 +8,7 @@ import NftCard from "./Dip721Card"
 import Dip721IdleCardList from "./Dip721CardList"
 
 export default function IdleList () {
-  
+
 
 
 
@@ -31,8 +31,8 @@ export default function IdleList () {
           Rented
         </Link>
       </div>
-      <div className="flex flex-row flex-wrap">
-        <Dip721IdleCardList></Dip721IdleCardList>
+      <div className="flex flex-row flex-wrap justify-center">
+        <Dip721IdleCardList className="grow"></Dip721IdleCardList>
       </div>
 
 

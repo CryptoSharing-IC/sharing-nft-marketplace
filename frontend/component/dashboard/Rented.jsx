@@ -1,8 +1,8 @@
 import React from "react"
-import List from "../List"
 import { Link } from "react-router-dom"
+import Dip721IdleCardList from "./Dip721CardList"
 
-export default function Rented() {
+export default function Rented () {
   return (
     <>
       <div className="tabs tabs-boxed">
@@ -19,7 +19,9 @@ export default function Rented() {
           Rented
         </Link>
       </div>
-      <div>rented</div>
+      <div className="flex flex-row flex-wrap">
+        <Dip721IdleCardList></Dip721IdleCardList>
+      </div>
     </>
   )
 }
