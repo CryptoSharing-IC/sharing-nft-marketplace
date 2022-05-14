@@ -5,7 +5,7 @@ import { marketplace } from "canisters/marketplace"
 
 
 import NftCard from "./Dip721Card"
-import Dip721IdleCardList from "./Dip721IdleCardList"
+import Dip721IdleCardList from "./Dip721CardList"
 
 export default function IdleList () {
   
