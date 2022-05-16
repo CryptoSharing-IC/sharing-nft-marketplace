@@ -5,23 +5,23 @@ export default function NftCard (props) {
         <>
             <div className="card w-96 bg-base-100 shadow-xl">
                 <figure className="px-10 pt-10">
-                    <img src={props.location} alt="img" className="rounded-xl" />
+                    <img src={props.nftData.location} alt="img" className="rounded-xl" />
                 </figure>
                 <div className="card-body items-center text-center">
-                    <h2 className="card-title">{props.name}</h2>
-                    <p>{props.desc}</p>
+                    <h2 className="card-title">{props.nftData.name}</h2>
+                    <p>{props.nftData.desc}</p>
                     <div className="card-actions">
-                        <button href="#lenging" className="btn btn-primary">Lending</button>
+                        <a href="#lenging" className="btn btn-primary">Lending</a>
                     </div>
                 </div>
             </div>
 
-            <div class="modal" id="lenging">
-                <div class="modal-box">
-                    <h3 class="font-bold text-lg">Congratulations random Interner user!</h3>
-                    <p class="py-4">You've been selected for a chance to get one year of subscription to use Wikipedia for free!</p>
-                    <div class="modal-action">
-                        <a href="#" class="btn">Yay!</a>
+            <div className="modal" id="lenging">
+                <div className="modal-box w-11/12 max-w-5xl">
+                    <h3 className="font-bold text-lg">Congratul</h3>
+                    <p className="py-4">You've been selected for a chance to get one year of subscription to use Wikipedia for free!</p>
+                    <div className="modal-action">
+                        <a href="#" className="btn">Yay!</a>
                     </div>
                 </div>
             </div>
