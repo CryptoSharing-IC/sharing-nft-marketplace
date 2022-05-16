@@ -41,7 +41,7 @@ export default function Dip721IdleCardList () {
     return (
         <div className="flex flex-row flex-wrap justify-center">
             {
-                nfts.map((e, index) => (<Dip721Card key={index} location={e.location} name={e.name} desc={e.desc}></Dip721Card>))
+                nfts.map((e, index) => (<Dip721Card key={index} nftData={e}></Dip721Card>))
             }
         </div>
     )
