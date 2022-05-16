@@ -9,12 +9,6 @@ import Dip721IdleCardList from "./Dip721CardList"
 
 export default function IdleList () {
 
-
-
-
-
-
-
   return (
     <>
       <div className="tabs tabs-boxed">
@@ -34,8 +28,6 @@ export default function IdleList () {
       <div className="flex flex-row flex-wrap justify-center">
         <Dip721IdleCardList className="grow"></Dip721IdleCardList>
       </div>
-
-
 
     </>
 
