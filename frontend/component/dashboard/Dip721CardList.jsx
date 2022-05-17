@@ -33,7 +33,8 @@ export default function Dip721IdleCardList () {
     }
     React.useEffect(() => {
         (async () => {
-            let nfts = await fetch(userPrincipal)
+            // let nfts = await fetch(userPrincipal)
+            let nfts = await fetch("d3muz-iml3r-ou5hr-47nm2-hnnk5-aplkc-y2ql7-xehxt-kghb2-4dokl-gqe")
             setNfts(nfts)
         })()
     }, [userPrincipal])
