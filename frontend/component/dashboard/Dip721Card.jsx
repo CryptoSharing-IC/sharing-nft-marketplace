@@ -12,7 +12,8 @@ export default function NftCard (props) {
                     <h2 className="card-title">{props.nftData.name}</h2>
                     <p>{props.nftData.desc}</p>
                     <div className="card-actions">
-                        <a href="#lenging" className="btn btn-primary">Lending</a>
+
+                        <label htmlFor="lending-modal" className="btn modal-button">Lending</label>
                     </div>
                 </div>
             </div>
