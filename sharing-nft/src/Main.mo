@@ -24,7 +24,7 @@ shared actor class NFT(custodian: Principal, init : Types.NonFungibleToken) = Se
   // https://forum.dfinity.org/t/is-there-any-address-0-equivalent-at-dfinity-motoko/5445/3
   let null_address : Principal = Principal.fromText("aaaaa-aa");
 
-  public shared({caller}) addCustodian(user: Principal): async Types.TxReceipt {
+  public shared({caller}) func addCustodian(user: Principal): async Types.TxReceipt {
       if(not List.some(custodians, func (custodian : Principal) : Bool { custodian == caller })) {
          return #Err(#Unauthorized);
       }
