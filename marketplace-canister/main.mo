@@ -2,10 +2,10 @@
 import Principal "mo:base/Principal";
 import Time "mo:base/Time";
 
-import UserDomain "user/UserDomain";
-import UserRepositories "user/UserRepositories";
 import ListingDomain "listing/ListingDomain";
 import ListingRepositories "listing/ListingRepositories";
+import UserDomain "user/UserDomain";
+import UserRepositories "user/UserRepositories";
 
 actor Marketplace {
 
@@ -55,11 +55,18 @@ actor Marketplace {
 
     /// ---------------------------- Listing API ---------------------------- ///
     public shared(msg) func listingNFT(cmd: ListingCreateCommand) : async Nat {
+        //TODO, 确定在第三方nft平台上这个nft的拥有者确实为caller
+        //TODO, 然后 生成listing对象
+        //TODO, 到我方的衍生合约上铸造一个wNft,供用户赎回使用
+        //TODO, 流程结束
+        
         let caller = msg.caller;
         let id = getIdAndIncrementOne();
         let listingProfile = ListingDomain.createProfile(cmd, id, caller, timeNow_());
         listingDB := ListingRepositories.saveListing(listingDB, listingRepository, listingProfile);
         id
+
+
     };
 
     /// ------------------------------ Helper ------------------------------ ///
