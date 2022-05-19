@@ -1,7 +1,6 @@
 import React from 'react'
 import DatePicker from "react-datepicker";
-
-import "react-datepicker/dist/react-datepicker.css";
+import { marketplace } from "canisters/marketplace"
 
 export default function LengingDetail (props) {
 
@@ -20,6 +19,26 @@ export default function LengingDetail (props) {
             [e.target.name]: e.target.value
         }
         )
+    }
+    async function submit () {
+        //TODO, add validater code
+        let dip721CanisteId = "rrkah-fqaaa-aaaaa-aaaaq-cai"
+
+
+
+
+
+        let reponse = await marketplace.listingNFT({
+            canisterId: dip721CanisteId,
+            nftId: state.nftData.id,
+            name: state.nftData.name,
+            nftInfo: state.nftData,
+            startTime: 34566,
+            endTime: 34567,
+            maxUseCount: 10,
+            isPrivate: false,
+        })
+        alert(reponse)
     }
     return (
         <>
@@ -53,7 +72,7 @@ export default function LengingDetail (props) {
                             <input type="text" className=" input-bordered  input w-full max-w-xs" name="price" value={state.price} onChange={handleChange} />
                             <div className="modal-action justify-end">
                                 <label htmlFor="lending-modal" className="btn">取消</label>
-                                <label htmlFor="lending-modal" className="btn">确定</label>
+                                <label htmlFor="lending-modal" className="btn" onClick={() => submit()}>确定</label>
 
                             </div>
                         </div>
