@@ -179,4 +179,21 @@ shared actor class NFT(custodian: Principal, init : Types.NonFungibleToken) = Se
       id = transactionId;
     });
   };
+
+  public shared({caller}) func burn(token_id: Nat64) : async Types.TxReceipt {
+    let item = List.get(nfts, Nat64.toNat(token_id));
+    switch(item) {
+        case null {
+          return #Err(#InvalidTokenId);
+        };
+        case (?token) {
+          if (
+            caller != token.owner and
+            not List.some(custodians, func (custodian : Principal) : Bool { custodian == caller })
+          ) {
+          return #Err(#Unauthorized);
+        };
+    }
+    return transferFrom(caller, null_address, token_id, caller);
+  }
 }
