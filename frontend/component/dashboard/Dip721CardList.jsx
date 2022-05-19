@@ -15,6 +15,8 @@ export default function Dip721IdleCardList () {
         let tokenIds = await dip721.getTokenIdsForUserDip721(Principal.fromText(userPrincipal))
         return (await Promise.all(tokenIds.map(id => dip721.getMetadataDip721(id))))
             .map(e => adapter(e))
+            .map((e, index) => { return { ...e, ...{ id: tokenIds[index] } } })
+
     }
     function adapter (metadataDip721) {
         if (!metadataDip721.Ok) return null
@@ -40,7 +42,7 @@ export default function Dip721IdleCardList () {
     }, [userPrincipal])
 
     return (
-        <div className="flex flex-row flex-wrap justify-center">
+        <div className="flex flex-row flex-wrap justify-between gap-1">
             {
                 nfts.map((e, index) => (<Dip721Card key={index} nftData={e}></Dip721Card>))
             }
