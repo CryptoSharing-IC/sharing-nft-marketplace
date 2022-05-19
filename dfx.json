@@ -8,6 +8,10 @@
       "main": "dip-721-nft-container/src/Main.mo",
       "type": "motoko"
     },
+    "sharing": {
+      "main": "sharing-nft/src/Main.mo",
+      "type": "motoko"
+    },
     "assets": {
       "dependencies": [
         "marketplace"
