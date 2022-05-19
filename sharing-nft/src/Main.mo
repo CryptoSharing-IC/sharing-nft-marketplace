@@ -79,8 +79,6 @@ shared actor class NFT(custodian: Principal, init : Types.NonFungibleToken) = Se
                 owner = to;
                 approved = null;
                 createdAt = token.createdAt;
-                startTime = token.startTime;
-                endTime = token.endTime;
                 data = token.data;
                 properties = token.properties;
               };
@@ -206,10 +204,12 @@ shared actor class NFT(custodian: Principal, init : Types.NonFungibleToken) = Se
             nfts := List.map(nfts, func (item : Types.Nft) : Types.Nft {
             if (item.id == token.id) {
               let update : Types.Nft = {
-                owner = item.owner;
-                id = item.id;
+                id = token.id;
+                owner = token.owner;
                 approved = ?user;
-                metadata = token.metadata;
+                createdAt = token.createdAt;
+                data = token.data;
+                properties = token.properties;
               };
               return update;
             } else {
