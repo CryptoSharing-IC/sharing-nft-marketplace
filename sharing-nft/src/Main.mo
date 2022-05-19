@@ -15,10 +15,10 @@ shared actor class NFT(custodian: Principal, init : Types.NonFungibleToken) = Se
   stable var transactionId: Types.TransactionId = 0;
   stable var nfts = List.nil<Types.Nft>();
   stable var custodians = List.make<Principal>(custodian);
-  stable var logo : Types.LogoResult = init.logo;
-  stable var name : Text = init.name;
-  stable var symbol : Text = init.symbol;
-  stable var maxLimit : Nat16 = init.maxLimit;
+  stable var _logo : Types.LogoResult = init.logo;
+  stable var _name : Text = init.name;
+  stable var _symbol : Text = init.symbol;
+  stable var _maxLimit : Nat64 = init.maxLimit;
 
   // https://forum.dfinity.org/t/is-there-any-address-0-equivalent-at-dfinity-motoko/5445/3
   let null_address : Principal = Principal.fromText("aaaaa-aa");
@@ -47,15 +47,15 @@ shared actor class NFT(custodian: Principal, init : Types.NonFungibleToken) = Se
     if (to == null_address) {
       return #Err(#ZeroAddress);
     } else {
-      return transferFrom(from, to, token_id, caller);
+      return transfer(from, to, token_id, caller);
     };
   };
 
   public shared({ caller }) func transferFrom(from: Principal, to: Principal, token_id: Types.TokenId) : async Types.TxReceipt {
-    return transferFrom(from, to, token_id, caller);
+    return transfer(from, to, token_id, caller);
   };
 
-  func transferFrom(from: Principal, to: Principal, token_id: Types.TokenId, caller: Principal) : Types.TxReceipt {
+  func transfer(from: Principal, to: Principal, token_id: Types.TokenId, caller: Principal) : Types.TxReceipt {
     let item = List.get(nfts, Nat64.toNat(token_id));
     switch (item) {
       case null {
@@ -64,6 +64,7 @@ shared actor class NFT(custodian: Principal, init : Types.NonFungibleToken) = Se
       case (?token) {
         if (
           caller != token.owner and
+          caller != token.approved and
           not List.some(custodians, func (custodian : Principal) : Bool { custodian == caller })
         ) {
           return #Err(#Unauthorized);
@@ -73,10 +74,14 @@ shared actor class NFT(custodian: Principal, init : Types.NonFungibleToken) = Se
           nfts := List.map(nfts, func (item : Types.Nft) : Types.Nft {
             if (item.id == token.id) {
               let update : Types.Nft = {
+                id = token.id;
                 owner = to;
-                id = item.id;
                 approved = null;
-                metadata = token.metadata;
+                createdAt = token.createdAt;
+                startTime = token.startTime;
+                endTime = token.endTime;
+                data = token.data;
+                properties = token.properties;
               };
               return update;
             } else {
@@ -95,15 +100,15 @@ shared actor class NFT(custodian: Principal, init : Types.NonFungibleToken) = Se
   };
 
   public query func logo() : async Types.LogoResult {
-    return logo;
+    return _logo;
   };
 
   public query func name() : async Text {
-    return name;
+    return _name;
   };
 
   public query func symbol() : async Text {
-    return symbol;
+    return _symbol;
   };
 
   public query func totalSupply() : async Nat64 {
@@ -124,15 +129,15 @@ shared actor class NFT(custodian: Principal, init : Types.NonFungibleToken) = Se
     };
   };
 
-  public query func getMaxLimit() : async Nat16 {
-    return maxLimit;
+  public query func getMaxLimit() : async Nat64 {
+    return _maxLimit;
   };
 
   public func getMetadataForUser(user: Principal) : async Types.ExtendedMetadataResult {
     let item = List.find(nfts, func(token: Types.Nft) : Bool { token.owner == user });
     switch (item) {
       case null {
-        return #Err(#Other);
+        return #Err(#Other); 
       };
       case (?token) {
         return #Ok({
@@ -142,16 +147,16 @@ shared actor class NFT(custodian: Principal, init : Types.NonFungibleToken) = Se
       }
     };
   };
-  public func getMetadataForUser(user: Principal) : async [Types.ExtendedMetadataResult] {
-    let items = List.filter(nfts, func(token: Types.Nft) : Bool { token.owner == user });
-    let metadatas = List.map(items, func(token: Types.Nft) : Types.ExtendedMetadataResult {
-      return {
-        metadata_desc = token.metadata;
-        token_id = token.id;
-      }
-    })
-    return List.toArray(metadatas);
-  };
+  // public func getMetadataForUser(user: Principal) : async [Types.ExtendedMetadataResult] {
+  //   let items = List.filter(nfts, func(token: Types.Nft) : Bool { token.owner == user });
+  //   let metadatas = List.map(items, func(token: Types.Nft) : Types.ExtendedMetadataResult {
+  //     return {
+  //       metadata_desc = token.metadata;
+  //       token_id = token.id;
+  //     }
+  //   });
+  //   return List.toArray(metadatas);
+  // };
 
   public query func getTokenIdsForUser(user: Principal) : async [Types.TokenId] {
     let items = List.filter(nfts, func(token: Types.Nft) : Bool { token.owner == user });
@@ -168,6 +173,7 @@ shared actor class NFT(custodian: Principal, init : Types.NonFungibleToken) = Se
     let nft : Types.Nft = {
       owner = to;
       id = newId;
+      approved = null;
       metadata = metadata;
     };
 
@@ -193,9 +199,12 @@ shared actor class NFT(custodian: Principal, init : Types.NonFungibleToken) = Se
             not List.some(custodians, func (custodian : Principal) : Bool { custodian == caller })
           ) {
           return #Err(#Unauthorized);
+          } else {
+             return transfer(caller, null_address, token_id, caller);
+          }
         };
-    }
-    return transferFrom(caller, null_address, token_id, caller);
+   
+    };
   };
 
   public shared({caller}) func approve(user: Principal, token_id: Nat64): async Types.TxReceipt {
@@ -217,7 +226,7 @@ shared actor class NFT(custodian: Principal, init : Types.NonFungibleToken) = Se
               let update : Types.Nft = {
                 owner = item.owner;
                 id = item.id;
-                approved = user;
+                approved = ?user;
                 metadata = token.metadata;
               };
               return update;
@@ -228,8 +237,7 @@ shared actor class NFT(custodian: Principal, init : Types.NonFungibleToken) = Se
           transactionId += 1;
           return #Ok(transactionId);   
           }
-        }
+        };
       }
-
-
+  }
 }

@@ -11,7 +11,7 @@ module {
     logo: LogoResult;
     name: Text;
     symbol: Text;
-    maxLimit : Nat16;
+    maxLimit : Nat64;
   };
 
   public type ApiError = {
@@ -45,47 +45,42 @@ module {
     data: Text;
   };
 
+  public type MetadataResult = Result<Nft, ApiError>;
+
+  public type Property = {
+      name: Text;
+      value: Text;
+  };
+  public type Location = {
+      #InCanister: Blob; // NFT encoded data
+      #AssetCanister: (Principal, Blob); // asset canister id, storage key
+      #IPFS: Text; // IPFS content hash
+      #Web: Text; // URL pointing to the file
+  };
+
+  public type TokenData = {
+      filetype: Text; // jpg, png, mp4, etc.
+      location: Location;
+  };
   public type Nft = {
+    id: TokenId;
     owner: Principal;
     approved: ?Principal;
-    id: TokenId;
-    metadata: MetadataDesc;
-  };
 
-  public type ExtendedMetadataResult = Result<{
-    metadata_desc: MetadataDesc;
-    token_id: TokenId;
-  }, ApiError>;
+    // originalAddress: Principal; todo, put into properties
+    //parents: [TokenId]; todo, put into properties
+    createdAt: Int;
+    startTime: ?Int;       // 有效期起始时间
+    endTime: ?Int;       // 有效期结束时间
+    //isDerivative: Bool;
 
-  public type MetadataResult = Result<MetadataDesc, ApiError>;
-
-  public type MetadataDesc = [MetadataPart];
-
-  public type MetadataPart = {
-    purpose: MetadataPurpose;
-    key_val_data: [MetadataKeyVal];
-    data: Blob;
-  };
-
-  public type MetadataPurpose = {
-    #Preview;
-    #Rendered;
+    properties: [Property];  
+    data: ?TokenData;
   };
   
-  public type MetadataKeyVal = {
-    key: Text;
-    val: MetadataVal;
-  };
 
-  public type MetadataVal = {
-    #TextContent : Text;
-    #BlobContent : Blob;
-    #NatContent : Nat;
-    #Nat8Content: Nat8;
-    #Nat16Content: Nat16;
-    #Nat32Content: Nat32;
-    #Nat64Content: Nat64;
-  };
+
+
 
   public type MintReceipt = Result<MintReceiptPart, ApiError>;
 
