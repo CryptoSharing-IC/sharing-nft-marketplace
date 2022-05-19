@@ -46,7 +46,6 @@ module {
   };
 
   public type MetadataResult = Result<Nft, ApiError>;
-
   public type Property = {
       name: Text;
       value: Text;
@@ -70,14 +69,18 @@ module {
     // originalAddress: Principal; todo, put into properties
     //parents: [TokenId]; todo, put into properties
     createdAt: Int;
-    startTime: ?Int;       // 有效期起始时间
-    endTime: ?Int;       // 有效期结束时间
+    //startTime: ?Int;       // 有效期起始时间
+    //endTime: ?Int;       // 有效期结束时间
     //isDerivative: Bool;
 
     properties: [Property];  
     data: ?TokenData;
   };
   
+  public type Metadata = {
+    properties: [Property];  
+    data: ?TokenData;
+  };
 
 
 

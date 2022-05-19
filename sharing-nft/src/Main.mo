@@ -8,6 +8,7 @@ import Nat64 "mo:base/Nat64";
 import Nat8 "mo:base/Nat8";
 import Option "mo:base/Option";
 import Principal "mo:base/Principal";
+import Time "mo:base/Time";
 
 import Types "./Types";
 
@@ -124,7 +125,7 @@ shared actor class NFT(custodian: Principal, init : Types.NonFungibleToken) = Se
         return #Err(#InvalidTokenId);
       };
       case (?token) {
-        return #Ok(token.metadata);
+        return #Ok(token);
       }
     };
   };
@@ -133,30 +134,10 @@ shared actor class NFT(custodian: Principal, init : Types.NonFungibleToken) = Se
     return _maxLimit;
   };
 
-  public func getMetadataForUser(user: Principal) : async Types.ExtendedMetadataResult {
-    let item = List.find(nfts, func(token: Types.Nft) : Bool { token.owner == user });
-    switch (item) {
-      case null {
-        return #Err(#Other); 
-      };
-      case (?token) {
-        return #Ok({
-          metadata_desc = token.metadata;
-          token_id = token.id;
-        });
-      }
-    };
+  public func getMetadataForUser(user: Principal) : async [Types.Nft] {
+    let items = List.filter(nfts, func(token: Types.Nft) : Bool { token.owner == user });
+    return List.toArray(items);
   };
-  // public func getMetadataForUser(user: Principal) : async [Types.ExtendedMetadataResult] {
-  //   let items = List.filter(nfts, func(token: Types.Nft) : Bool { token.owner == user });
-  //   let metadatas = List.map(items, func(token: Types.Nft) : Types.ExtendedMetadataResult {
-  //     return {
-  //       metadata_desc = token.metadata;
-  //       token_id = token.id;
-  //     }
-  //   });
-  //   return List.toArray(metadatas);
-  // };
 
   public query func getTokenIdsForUser(user: Principal) : async [Types.TokenId] {
     let items = List.filter(nfts, func(token: Types.Nft) : Bool { token.owner == user });
@@ -164,17 +145,19 @@ shared actor class NFT(custodian: Principal, init : Types.NonFungibleToken) = Se
     return List.toArray(tokenIds);
   };
 
-  public shared({ caller }) func mint(to: Principal, metadata: Types.MetadataDesc) : async Types.MintReceipt {
+  public shared({ caller }) func mint(to: Principal, metadata: Types.Metadata) : async Types.MintReceipt {
     if (not List.some(custodians, func (custodian : Principal) : Bool { custodian == caller })) {
       return #Err(#Unauthorized);
     };
 
     let newId = Nat64.fromNat(List.size(nfts));
     let nft : Types.Nft = {
-      owner = to;
       id = newId;
+      owner = to;
       approved = null;
-      metadata = metadata;
+      createdAt = Time.now();
+      properties = metadata.properties;
+      data = metadata.data;
     };
 
     nfts := List.push(nft, nfts);
@@ -216,7 +199,6 @@ shared actor class NFT(custodian: Principal, init : Types.NonFungibleToken) = Se
         case (?token) {
           if (
             caller != token.owner and
-            caller != token.approved and
             not List.some(custodians, func (custodian : Principal) : Bool { custodian == caller })
           ) {
              return #Err(#Unauthorized);
