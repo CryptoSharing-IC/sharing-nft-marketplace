@@ -20,23 +20,29 @@ export default function LengingDetail (props) {
         }
         )
     }
+    // {
+    //     canisterId;
+    //     name;
+    //     availableUtil: //有效期到
+    //     minPeriod;
+    //     maxPeriod;
+    //     price;
+    //     createdAt;
+    //     updateAt;
+    //     state; //状态, 未质押, 已质押, 下架, 已赎回
+    // }
     async function submit () {
         //TODO, add validater code
         let dip721CanisteId = "rrkah-fqaaa-aaaaa-aaaaq-cai"
-
-
-
-
+        
 
         let reponse = await marketplace.listingNFT({
-            canisterId: dip721CanisteId,
-            nftId: state.nftData.id,
-            name: state.nftData.name,
-            nftInfo: state.nftData,
-            startTime: 34566,
-            endTime: 34567,
-            maxUseCount: 10,
-            isPrivate: false,
+          canisterId: dip721CanisteId,
+          nftId: state.nftData.id,
+          name: state.nftData.name,
+          availableUtil: state.availableUtil,
+          minPeriod: state.minPeriod,
+          price: state.price,
         })
         alert(reponse)
     }
