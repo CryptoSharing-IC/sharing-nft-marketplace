@@ -1,8 +1,11 @@
 import React from 'react'
 import DatePicker from "react-datepicker";
 import { marketplace } from "canisters/marketplace"
+import { useForm } from "react-hook-form";
+
 
 export default function LengingDetail (props) {
+    const { register, errors, handleSubmit } = useForm()
 
     let [state, setState] = React.useState(
         {
@@ -20,34 +23,27 @@ export default function LengingDetail (props) {
         }
         )
     }
-    // {
-    //     canisterId;
-    //     name;
-    //     availableUtil: //有效期到
-    //     minPeriod;
-    //     maxPeriod;
-    //     price;
-    //     createdAt;
-    //     updateAt;
-    //     state; //状态, 未质押, 已质押, 下架, 已赎回
-    // }
-    async function submit () {
+
+    async function onSubmit () {
         //TODO, add validater code
         let dip721CanisteId = "rrkah-fqaaa-aaaaa-aaaaq-cai"
-        
+        if (!state.availableUtil || !state.minPeriod || !state.price) {
+
+            return
+        }
 
         let reponse = await marketplace.listingNFT({
-          canisterId: dip721CanisteId,
-          nftId: state.nftData.id,
-          name: state.nftData.name,
-          availableUtil: state.availableUtil,
-          minPeriod: state.minPeriod,
-          price: state.price,
+            canisterId: dip721CanisteId,
+            nftId: state.nftData.id,
+            name: state.nftData.name,
+            availableUtil: state.availableUtil,
+            minPeriod: state.minPeriod,
+            price: state.price,
         })
         alert(reponse)
     }
     return (
-        <>
+        <form onSubmit={handleSubmit(onSubmit)}>
             <input type="checkbox" id="lending-modal" className="modal-toggle" />
             <div className="modal">
 
@@ -77,16 +73,13 @@ export default function LengingDetail (props) {
                             </label>
                             <input type="text" className=" input-bordered  input w-full max-w-xs" name="price" value={state.price} onChange={handleChange} />
                             <div className="modal-action justify-end">
-                                <label htmlFor="lending-modal" className="btn">取消</label>
-                                <label htmlFor="lending-modal" className="btn" onClick={() => submit()}>确定</label>
-
+                                <button htmlFor="lending-modal" className="btn">取消</button>
+                                <button htmlFor="lending-modal" className="btn" type='submit'>确定</button>
                             </div>
                         </div>
                     </div>
-
-
                 </div>
             </div>
-        </>
+        </form>
     )
 }
