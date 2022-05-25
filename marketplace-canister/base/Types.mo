@@ -1,6 +1,6 @@
 
 import Hash "mo:base/Hash";
-import Nat "mo:base/Nat";
+import Nat64"mo:base/Nat64";
 import Principal "mo:base/Principal";
 import Text "mo:base/Text";
 
@@ -27,7 +27,7 @@ module {
         pageNum: Nat;
     };
 
-    public type Id = Nat;
+    public type Id = Nat64;
 
     public type RichText = {
         format: Text;   /// 文本内容格式,例如: text, html, markdown
@@ -42,7 +42,7 @@ module {
     
     public type UserPrincipal = Principal;
 
-    public let idEq = Nat.equal;
+    public let idEq = Nat64.equal;
     public let idHash = Hash.hash;
 
     public let userEq = Principal.equal;
@@ -60,6 +60,19 @@ module {
         #alreadyExisted;
         #unauthorized;  // 没有授权
         #unknownError;
+        #listingNotEnable; // listing 不可用
+        #listingNotFound;   
+    };
 
+    public type ApiError = {
+        #Unauthorized;
+        #InvalidTokenId;
+        #ZeroAddress;
+        #Other;
+    };
+
+    public type Result<S, E> = {
+        #Ok : S;
+        #Err : E;
     };
 }

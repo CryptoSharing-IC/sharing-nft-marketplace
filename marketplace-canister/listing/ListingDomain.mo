@@ -1,6 +1,10 @@
 
+import Int "mo:base/Int";
+import Order "mo:base/Order";
+
 import Types "../base/Types";
 import TokenDomain "../nft/TokenDomain";
+import Utils "../base/Utils";
 
 module {
     
@@ -8,23 +12,21 @@ module {
     public type ListingProperty = Types.Property<NFTPropertyKey, Text>;
     public type Timestamp = Types.Timestamp;
 
+    public type MetadataDesc = TokenDomain.MetadataDesc;
+
     public type ListingProfile = {
         id: ListingId;
         canisterId: Principal;
-        nftId: Nat;
+        nftId: Nat64;
         name: Text;
-        nftInfo: TokenInfo;
-        startTime: Timestamp;
-        endTime: Timestamp;
-        maxUseCount: Nat;
-        isPrivate: Bool;
-        properties: ListingProperty;
+        availableUtil: Timestamp;
+        price: PriceUnit;  // 此数值表示价格，例如： 10000 表示 1 ICP
         owner: Principal;
+        status: ListingStatus;
         createdAt: Timestamp;
         updatedAt: Timestamp;
+        metadata: MetadataDesc;
     };
-
-    public type TokenInfo = TokenDomain.TokenProfile;
 
     public type NFTPropertyKey = {
         #isDerivative;
@@ -32,47 +34,54 @@ module {
         // can add more properties here
     };
 
-    public type ListingCreateCommand = {
-        canisterId: Principal;
-        nftId: Nat;
-        name: Text;
-        nftInfo: TokenInfo;
-        startTime: Timestamp;
-        endTime: Timestamp;
-        maxUseCount: Nat;
-        isPrivate: Bool;
-        properties: ListingProperty;
+    public type PriceUnit = {
+        symbol: Text;
+        decimals: Nat64;
     };
 
-    public func createProfile(cmd: ListingCreateCommand, id: ListingId, owner: Principal, now: Timestamp) : ListingProfile {
+    public type ListingStatus = {
+        #Pending;   // 待上架
+        #Enable;    // 已上架
+        #Disable;   // 已下架
+        #Redeemed;  // 已赎回
+    };
+
+    public type ListingCreateCommand = {
+        canisterId: Principal;
+        nftId: Nat64;
+        name: Text;
+        availableUtil: Timestamp;
+        price: PriceUnit;  // 此数值表示价格，例如： 10000 表示 1 ICP
+        metadata: MetadataDesc;
+    };
+
+    public func createProfile(cmd: ListingCreateCommand, id: ListingId, owner: Principal, now: Timestamp, metadata: MetadataDesc) : ListingProfile {
         return {
             id = id ;
             canisterId = cmd.canisterId ;
             nftId = cmd.nftId ;
             name = cmd.name ;
-            nftInfo = cmd.nftInfo ;
-            startTime = cmd.startTime ;
-            endTime = cmd.endTime ;
-            maxUseCount = cmd.maxUseCount ;
-            isPrivate = cmd.isPrivate ;
-            properties = cmd.properties ;   
+            availableUtil = cmd.availableUtil ;
+            price = cmd.price ;
             owner = owner ;
+            status = #Pending;
             createdAt = now ;
             updatedAt = now ;
+            metadata = metadata;
         };
     };
 
     public type ListingEditCommand = {
         id: ListingId;
         canisterId: Principal;
-        nftId: Nat;
+        nftId: Nat64;
         name: Text;
-        nftInfo: TokenInfo;
-        startTime: Timestamp;
-        endTime: Timestamp;
-        maxUseCount: Nat;
-        isPrivate: Bool;
-        properties: ListingProperty;
+        availableUtil: Timestamp;
+        price: PriceUnit;  // 此数值表示价格，例如： 10000 表示 1 ICP
+        owner: Principal;
+        status: ListingStatus;
+        createdAt: Timestamp;
+        metadata: MetadataDesc;
     };
 
     public func updateListing(cmd: ListingEditCommand, profile: ListingProfile, now: Timestamp) : ListingProfile {
@@ -82,19 +91,44 @@ module {
             canisterId = cmd.canisterId ;
             nftId = cmd.nftId ;
             name = cmd.name ;
-            nftInfo = cmd.nftInfo ;
-            startTime = cmd.startTime ;
-            endTime = cmd.endTime ;
-            maxUseCount = cmd.maxUseCount ;
-            isPrivate = cmd.isPrivate ;
-            properties = cmd.properties ;
+            availableUtil = cmd.availableUtil ;
+            price = cmd.price ;
+            status = cmd.status;
             owner = profile.owner ;
             createdAt = profile.createdAt ;
             updatedAt = now ;
+            metadata = cmd.metadata;
         }
     };
 
-    public let listingEq = Types.idEq;
+    public type ListingPageQuery = {
+        pageSize: Nat;
+        pageNum: Nat;
+        status: Text;
+    };
 
+    public func listingStatusToText(status: ListingStatus) : Text {
+        switch (status) {
+            case (#Enable) "enable";
+            case (#Disable)  "disable";
+            case (#Redeemed) "redeemed";
+            case (_)  "pending";
+        }
+    };
+
+    public func listingStatusMatches(profile: ListingProfile, status: Text) : Bool {
+        listingStatusToText(profile.status) == Utils.toLowerCase(status)
+    };
+
+    /// 按更新时间倒序，发布时间越大表示越新，排在前面
+    public func listingOrderUpdateTimeDesc(profile1: ListingProfile, profile2: ListingProfile) : Order.Order {
+        Int.compare(profile2.updatedAt, profile1.updatedAt)
+    };
+
+    public type ListingIdCommand = {
+        id: ListingId;
+    };
+
+    public let listingEq = Types.idEq;
 
 }

@@ -1,6 +1,6 @@
 
 import Hash "mo:base/Hash";
-import Nat "mo:base/Nat";
+import Nat64 "mo:base/Nat64";
 import Option "mo:base/Option";
 import Order "mo:base/Order";
 import Text "mo:base/Text";
@@ -28,7 +28,7 @@ module {
 
     /// 辅助方法，Tag的Trie.Key实例
     public func listingDBKey(key: ListingId): ListingDBKey {
-        { key = key; hash = Hash.hash(key) }
+        { key = key; hash = Hash.hash(Nat64.toNat(key)) }
     };
 
     let listingEq = ListingDomain.listingEq;

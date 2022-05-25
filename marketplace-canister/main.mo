@@ -1,32 +1,64 @@
 
+import Array "mo:base/Array";
 import Principal "mo:base/Principal";
+// import Result "mo:base/Result";
 import Time "mo:base/Time";
 
+import LendDomain "lend/LendDomain";
+import LendRepositories "lend/LendRepositories";
 import ListingDomain "listing/ListingDomain";
 import ListingRepositories "listing/ListingRepositories";
 import UserDomain "user/UserDomain";
 import UserRepositories "user/UserRepositories";
+import Types "base/Types";
+import TokenDomain "nft/TokenDomain";
 
-actor Marketplace {
+shared(msg) actor class Marketplace() {
+
+    public type Result<X, Y> = Types.Result<X, Y>;
 
     public type UserProfile = UserDomain.UserProfile;
 
     public type ListingCreateCommand = ListingDomain.ListingCreateCommand;
+    public type ListingIdCommand = ListingDomain.ListingIdCommand;
+    public type ListingPageQuery = ListingDomain.ListingPageQuery;
+    public type ListingPage = ListingRepositories.ListingPage;
+
+    public type LendCreateCommand = LendDomain.LendCreateCommand;
+
+    public type LendIdCommand = LendDomain.LendIdCommand;
+
+    public type TokenProfile = TokenDomain.TokenProfile;
+
+    public type Error = Types.Error;
+
+    public type NFTActor = TokenDomain.NFTActor;
 
     /// ID Generator
-    stable var idGenerator : Nat = 10001;
+    stable var idGenerator : Nat64 = 10001;
+
+    let owner = msg.caller;
 
     stable var userDB = UserRepositories.newUserDB();
     let userRepository = UserRepositories.newUserRepository();
 
+    /// 上架 nft 信息
     stable var listingDB = ListingRepositories.newListingDB();
     let listingRepository = ListingRepositories.newListingRepository();
+
+    /// 租入 nft 信息
+    stable var lendDB = LendRepositories.newLendDB();
+    let lendRepository = LendRepositories.newLendRepository();
+
+    stable var  nftCansterId = "";
+
+    stable var sharingNftCanisterId = "";
 
     /// Canister健康检查
     public query func healthcheck() : async Bool { true };
 
     /// --------------------------- NFT Canister management --------------------------- ///
-    stable var canisters = [];
+    stable var canisters: [Principal] = [];
 
     /// --------------------------- User API ---------------------------- ///
     /// 注册新用户，注册成功返回true, 已经注册过的用户返回false
@@ -54,24 +86,173 @@ actor Marketplace {
     };
 
     /// ---------------------------- Listing API ---------------------------- ///
-    public shared(msg) func listingNFT(cmd: ListingCreateCommand) : async Nat {
-        //TODO, 确定在第三方nft平台上这个nft的拥有者确实为caller
-        //TODO, 然后 生成listing对象
-        //TODO, 到我方的衍生合约上铸造一个wNft,供用户赎回使用
-        //TODO, 流程结束
+    // 预上架 nft 
+    // 获取 nft 的 metadata
+    // 生成 listing 对象, 状态为 Pending (未质押) 
+    public shared(msg) func preListingNFT(cmd: ListingCreateCommand) : async Nat64 {
         
         let caller = msg.caller;
         let id = getIdAndIncrementOne();
-        let listingProfile = ListingDomain.createProfile(cmd, id, caller, timeNow_());
+
+        let nftId = cmd.nftId;
+        let nftCanisterId = cmd.canisterId;
+        let nftCansiter : NFTActor = actor(nftCansterId);
+        let metadataRes = await nftCansiter.getMetadataDip721(nftId);
+
+        let metadata = switch (metadataRes) {
+            case (#Ok(m)) m;
+            case (_) [];
+        };
+
+        let listingProfile = ListingDomain.createProfile(cmd, id, caller, timeNow_(), metadata);
         listingDB := ListingRepositories.saveListing(listingDB, listingRepository, listingProfile);
         id
-
-
     };
 
-    /// ------------------------------ Helper ------------------------------ ///
+    // 上架 nft
+    // Notice: 前端把第三方 nft 平台上这个nft的转为 marketplace canister 后调用些方法
+    // 需要验证对应的NFT是否属于 marketplace canister
+    // TODO 到我方的衍生合约上铸造一个 wNft, 并返回 wNFT id , 供用户赎回使用
+    public shared(msg) func listingNFT(cmd: ListingIdCommand) : async Result<Nat64, Error> {
+        let caller = msg.caller;
+        let nftCansiter : NFTActor = actor(nftCansterId);
+        let nftIds = await nftCansiter.getTokenIdsForUserDip721(caller);
+
+        
+        switch (ListingRepositories.getListing(listingDB, listingRepository, cmd.id)) {
+            case (?l) {
+                func f(id: Nat64) : Bool {
+                    id == l.nftId
+                };
+
+                switch (Array.find<Nat64>(nftIds, f)) {
+                    case (?_) {
+                        // 铸造 wNft TODO
+                        let wNftId = getIdAndIncrementOne();
+
+                        return #Ok(wNftId);
+                    };
+                    case (null) {
+                        return #Err(#unauthorized);
+                    }
+                }
+            };
+            case (null) {
+                return #Err(#notFound);
+            }
+        }
+    };
+
+    /// 下回赎回 redeem nft TODO
+    /// 下回时需要检查 listing 的状态，租期是否结束，
+    /// 如果可以赎回，再申请注销 wnft，注释成功后，前端再向 wnft 的 owner 转账 ICP
+    public shared(msg) func redeem(cmd: ListingIdCommand) : async Result<Nat64, Error> {
+        #Err(#unauthorized)
+    };
+
+    /// 验证赎回退款，校验成功修改 ListingProfile 的状态 TODO
+    public shared(msg) func validRedeem(cmd: ListingIdCommand) : async Result<Bool, Error> {
+        #Err(#unauthorized)
+    };
+
+    /// 分页查询 上架 nft 
+    public query(msg) func pageListings(q: ListingPageQuery) : async ListingPage {
+        let pageSize = q.pageSize;
+        let pageNum = q.pageNum;
+        let status = q.status;
+
+        ListingRepositories.pageListing(listingDB, listingRepository, pageSize, pageNum, func (id, profile) : Bool {
+            ListingDomain.listingStatusMatches(profile, status)
+        }, ListingDomain.listingOrderUpdateTimeDesc)
+    };
+
+    /// 预租入 Lend 流程，先记录租入信息，例如哪个已经上架的 nft等
+    public shared(msg) func preLendNFT(cmd: LendCreateCommand) : async Result<Nat64, Error> {
+        let caller = msg.caller;
+        let listingId = cmd.listingId;
+
+        switch (ListingRepositories.getListing(listingDB, listingRepository, listingId)) {
+            case (?listing) {
+                if (listing.status != #Enable) {
+                    return #Err(#listingNotEnable);
+                };
+
+                let lendId = getIdAndIncrementOne();
+                let now = timeNow_();
+                let metadata = listing.metadata;
+                let lendOrder = LendDomain.createProfile(cmd, lendId, caller, now, metadata);
+
+                lendDB := LendRepositories.saveLend(lendDB, lendRepository, lendOrder);
+
+                #Ok(lendId);
+
+            };
+            case (null) #Err(#listingNotFound);
+        }
+    };
+
+    /// 租入 Lend nft
+    /// 校验支付信息，成功后 mint nft 并返回 TODO
+    public shared(msg) func validLend(cmd: LendIdCommand) : async Result<TokenProfile, Error> {
+        #Err(#unauthorized)
+    };
+
+    
+    /// ------------------------------ Other NFT API ------------------------ ///
+    /// 添加支持的 NFT Canister
+    public shared(msg) func addNFTCansiter(canisterId: Principal) : async Bool {
+        func f(p: Principal) : Bool {
+            Principal.equal(p, canisterId)
+        };
+        switch (Array.find(canisters, f)) {
+            case (?_) true;
+            case null {
+                canisters := Array.append<Principal>(canisters, [canisterId]);
+                true
+            }
+        }
+    };
+
+    public shared(msg) func setNftCansterId(canisterId: Text) : async Result<Bool, Error> {
+        let caller = msg.caller;
+        if (caller == owner) {
+            nftCansterId := canisterId;
+            #Ok(true)
+        } else {
+            #Err(#unauthorized)
+        }
+        
+    };
+
+    public shared(msg) func setShareNftCansterId(canisterId: Text) : async Result<Bool, Error> {
+        let caller = msg.caller;
+        if (caller == owner) {
+            sharingNftCanisterId := canisterId;
+            #Ok(true)
+        } else {
+            #Err(#unauthorized)
+        }
+        
+    };
+
+    /// 获取支持的 NFT Canister列表
+    public query func getNFTCansiters() : async [Principal] {
+        canisters
+    };
+
+    /// 获取 nft canister id
+    public query func getNftCansterId() : async Text {
+        nftCansterId
+    };
+
+    /// 获取 sharibg nft  canister id
+    public query func getSharingNftCansterId() : async Text {
+        sharingNftCanisterId
+    };
+
+    /// ------------------------------ Helper ------------------------------  ///
     /// 获取当前的id，并对id+1,这是有size effects的操作
-    func getIdAndIncrementOne() : Nat {
+    func getIdAndIncrementOne() : Nat64 {
         let id = idGenerator;
         idGenerator += 1;
         id
