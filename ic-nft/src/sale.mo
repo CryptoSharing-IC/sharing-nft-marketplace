@@ -6,30 +6,39 @@
  * Stability  : Experimental
  */
 
-import Array "mo:base/Array";
-import Buffer "mo:base/Buffer";
-import Cycles "mo:base/ExperimentalCycles";
-import Error "mo:base/Error";
-import Hash "mo:base/Hash";
 import HashMap "mo:base/HashMap";
-import Int "mo:base/Int";
-import Iter "mo:base/Iter";
-import Nat "mo:base/Nat";
-import Prelude "mo:base/Prelude";
+import Cycles "mo:base/ExperimentalCycles";
 import Principal "mo:base/Principal";
-import Result "mo:base/Result";
+import Error "mo:base/Error";
+import Nat "mo:base/Nat";
+import Int "mo:base/Int";
+import Hash "mo:base/Hash";
 import Text "mo:base/Text";
 import Time "mo:base/Time";
+import Iter "mo:base/Iter";
 import TrieSet "mo:base/TrieSet";
-
+import Array "mo:base/Array";
+import Result "mo:base/Result";
+import Prelude "mo:base/Prelude";
+import Buffer "mo:base/Buffer";
 import Types "./types";
 
-shared(msg) actor class NFToken(
+shared(msg) actor class NFTSale(
     _logo: Text,
     _name: Text, 
     _symbol: Text,
     _desc: Text,
-    _owner: Principal
+    _owner: Principal,
+    _startTime: Int,
+    _endTime: Int,
+    _minPerUser: Nat,
+    _maxPerUser: Nat,
+    _amount: Nat,
+    _devFee: Nat, // /1e6
+    _devAddr: Principal,
+    _price: Nat,
+    _paymentToken: Principal,
+    _whitelist: ?Principal
     ) = this {
 
     type Metadata = Types.Metadata;
@@ -48,7 +57,6 @@ shared(msg) actor class NFToken(
         #Unauthorized;
         #TokenNotExist;
         #InvalidOperator;
-        #UserNotExist;
     };
     // to be compatible with Rust canister
     // in Rust, Result is `Ok` and `Err`
@@ -60,7 +68,99 @@ shared(msg) actor class NFToken(
         #Ok: (Nat, Nat);
         #Err: Errors;
     };
-    public type Result<Ok, Err> = {#ok: Ok; #err: Errors};
+
+    public type SaleInfo = {
+        startTime: Int;
+        endTime: Int;
+        minPerUser: Nat;
+        maxPerUser: Nat;
+        amount: Nat;
+        var amountLeft: Nat;
+        var fundRaised: Nat;
+        devFee: Nat; // /1e6
+        devAddr: Principal;
+        price: Nat;
+        paymentToken: Principal;
+        whitelist: ?Principal;
+        var fundClaimed: Bool;
+        var feeClaimed: Bool;
+    };
+
+    public type SaleInfoExt = {
+        startTime: Int;
+        endTime: Int;
+        minPerUser: Nat;
+        maxPerUser: Nat;
+        amount: Nat;
+        amountLeft: Nat;
+        fundRaised: Nat;
+        devFee: Nat; // /1e6
+        devAddr: Principal;
+        price: Nat;
+        paymentToken: Principal;
+        whitelist: ?Principal;
+        fundClaimed: Bool;
+        feeClaimed: Bool;
+    };
+
+    // DIP20 token actor
+	type DIP20Errors = {
+        #InsufficientBalance;
+        #InsufficientAllowance;
+        #LedgerTrap;
+        #AmountTooSmall;
+        #BlockUsed;
+        #ErrorOperationStyle;
+        #ErrorTo;
+        #Other;
+    };
+    type DIP20Metadata = {
+        logo : Text;
+        name : Text;
+        symbol : Text;
+        decimals : Nat8;
+        totalSupply : Nat;
+        owner : Principal;
+        fee : Nat;
+    };
+    public type TxReceiptToken = {
+        #Ok: Nat;
+        #Err: DIP20Errors;
+    };
+    type TokenActor = actor {
+        allowance: shared (owner: Principal, spender: Principal) -> async Nat;
+        approve: shared (spender: Principal, value: Nat) -> async TxReceiptToken;
+        balanceOf: (owner: Principal) -> async Nat;
+        decimals: () -> async Nat8;
+        name: () -> async Text;
+        symbol: () -> async Text;
+        getMetadata: () -> async DIP20Metadata;
+        totalSupply: () -> async Nat;
+        transfer: shared (to: Principal, value: Nat) -> async TxReceiptToken;
+        transferFrom: shared (from: Principal, to: Principal, value: Nat) -> async TxReceiptToken;
+    };
+
+    public type WhitelistActor = actor {
+        check: shared(user: Principal) -> async Bool;
+    };
+
+    private stable var saleInfo: ?SaleInfo = ?{
+        startTime = _startTime;
+        endTime = _endTime;
+        minPerUser = _minPerUser;
+        maxPerUser = _maxPerUser;
+        amount = _amount;
+        var amountLeft = _amount;
+        var fundRaised = 0;
+        devFee = _devFee;
+        devAddr = _devAddr;
+        price = _price;
+        paymentToken = _paymentToken;
+        whitelist = _whitelist;
+        var fundClaimed = false;
+        var feeClaimed = false;
+    };
+
     private stable var logo_ : Text = _logo; // base64 encoded image
     private stable var name_ : Text = _name;
     private stable var symbol_ : Text = _symbol;
@@ -260,11 +360,158 @@ shared(msg) actor class NFToken(
         _transfer(blackhole, tokenId);
     };
 
+    private func _batchMint(to: Principal, amount: Nat): async Bool {
+        var startIndex = totalSupply_;
+        var endIndex = startIndex + amount;
+        while(startIndex < endIndex) {
+            let token: TokenInfo = {
+                index = totalSupply_;
+                var owner = to;
+                var metadata = null;
+                var operator = null;
+                timestamp = Time.now();
+            };
+            tokens.put(totalSupply_, token);
+            _addTokenTo(to, totalSupply_);
+            totalSupply_ += 1;
+            startIndex += 1;
+            ignore addTxRecord(msg.caller, #mint(null), ?token.index, #user(blackhole), #user(to), Time.now());
+        };
+        return true;
+    };
+
+    public shared(msg) func setSaleInfo(info: ?SaleInfoExt): async ?SaleInfoExt {
+        assert(msg.caller == owner_);
+        switch(info) {
+            case(?i) {
+                saleInfo := ?{
+                    startTime = i.startTime;
+                    endTime = i.endTime;
+                    minPerUser = i.minPerUser;
+                    maxPerUser = i.maxPerUser;
+                    amount = i.amount;
+                    var amountLeft = i.amountLeft;
+                    var fundRaised = i.fundRaised;
+                    devFee = i.devFee;
+                    devAddr = i.devAddr;
+                    price = i.price;
+                    paymentToken = i.paymentToken;
+                    whitelist = i.whitelist;
+                    var fundClaimed = false;
+                    var feeClaimed = false;
+                };
+                return info;
+            };
+            case(_) {
+                saleInfo := null;
+                return null;
+            };
+        };
+    };
+
+    public query func getSaleInfo(): async ?SaleInfoExt {
+        switch(saleInfo) {
+            case(?i) {
+                ?{
+                    startTime = i.startTime;
+                    endTime = i.endTime;
+                    minPerUser = i.minPerUser;
+                    maxPerUser = i.maxPerUser;
+                    amount = i.amount;
+                    amountLeft = i.amountLeft;
+                    fundRaised = i.fundRaised;
+                    devFee = i.devFee;
+                    devAddr = i.devAddr;
+                    price = i.price;
+                    paymentToken = i.paymentToken;
+                    whitelist = i.whitelist;
+                    fundClaimed = i.fundClaimed;
+                    feeClaimed = i.feeClaimed;
+                }
+            };
+            case(_) {
+                null
+            };
+        }
+    };
+
+    public shared(msg) func buy(amount: Nat): async Result.Result<Nat, Text> {
+        let info = switch(saleInfo) {
+            case(?i) { i };
+            case(_) { return #err("not in sale"); };
+        };
+        if(Time.now() < info.startTime or Time.now() > info.endTime) return #err("sale not started or already ended");
+        let userBalance = _balanceOf(msg.caller);
+        if(amount < info.minPerUser or userBalance + amount > info.maxPerUser) return #err("amount error");
+        if(amount > info.amountLeft) return #err("not enough tokens left for sale");
+        switch(info.whitelist){
+            case(?whitelist){
+                let whitelistActor: WhitelistActor = actor(Principal.toText(whitelist));
+                switch(await whitelistActor.check(msg.caller)){
+                    case(false) {
+                        return #err("you are not in the whitelist");
+                    };
+                    case(true) { };
+                };
+            };
+            case(_) {};
+        };
+        let tokenActor: TokenActor = actor(Principal.toText(info.paymentToken));
+        switch(await tokenActor.transferFrom(msg.caller, Principal.fromActor(this), amount * info.price)) {
+            case(#Ok(id)) {
+                ignore _batchMint(msg.caller, amount);
+                info.amountLeft -= amount;
+                info.fundRaised += amount * info.price;
+                saleInfo := ?info;
+                return #ok(amount);
+            };
+            case(#Err(e)) {
+                return #err("payment failed");
+            };
+        };
+    };
+
 	public shared(msg) func setOwner(new: Principal): async Principal {
 		assert(msg.caller == owner_);
 		owner_ := new;
 		new
 	};
+
+    public shared(msg) func claimFunds(): async Result.Result<(Bool, Bool), Text> {
+        let info = switch(saleInfo) {
+            case(?i) { i };
+            case(_) { return #err("no sale"); };
+        };
+        assert(msg.caller == owner_ or msg.caller == info.devAddr);
+
+        let fee = info.fundRaised * info.devFee / 1_000_000;
+
+        let tokenActor: TokenActor = actor(Principal.toText(info.paymentToken));
+        let metadata = await tokenActor.getMetadata();
+        if(not info.fundClaimed) {
+            info.fundClaimed := true;
+            saleInfo := ?info;
+            switch(await tokenActor.transfer(owner_, info.fundRaised - fee - metadata.fee)) {
+                case(#Ok(id)) {};
+                case(#Err(e)) {
+                    info.fundClaimed := false;
+                    saleInfo := ?info;
+                };
+            };
+        };
+        if(not info.feeClaimed) {
+            info.feeClaimed := true;
+            saleInfo := ?info;
+            switch(await tokenActor.transfer(info.devAddr, fee - metadata.fee)) {
+                case(#Ok(id)) {};
+                case(#Err(e)) {
+                    info.feeClaimed := false;
+                    saleInfo := ?info;
+                };
+            };
+        };
+        #ok((info.fundClaimed, info.feeClaimed))
+    };
 
     // public update calls
     public shared(msg) func mint(to: Principal, metadata: ?TokenMetadata): async MintResult {
@@ -331,6 +578,25 @@ shared(msg) actor class NFToken(
         token.metadata := ?new_metadata;
         tokens.put(tokenId, token);
         let txid = addTxRecord(msg.caller, #setMetadata, ?token.index, #metadata(old_metadate), #metadata(?new_metadata), Time.now());
+        return #Ok(txid);
+    };
+
+    public shared(msg) func batchSetTokenMetadata(arr: [(Nat, TokenMetadata)]) : async TxReceipt {
+        // only canister owner can set
+        if(msg.caller != owner_) {
+            return #Err(#Unauthorized);
+        };
+        var txid = 0;
+        for((tokenId, metadata) in Iter.fromArray(arr)) {
+            if(_exists(tokenId) == false) {
+                return #Err(#TokenNotExist)
+            };
+            let token = _unwrap(tokens.get(tokenId));
+            let old_metadate = token.metadata;
+            token.metadata := ?metadata;
+            tokens.put(tokenId, token);
+            txid := addTxRecord(msg.caller, #setMetadata, ?token.index, #metadata(old_metadate), #metadata(?metadata), Time.now());
+        };
         return #Ok(txid);
     };
 
@@ -502,31 +768,31 @@ shared(msg) actor class NFToken(
         return _isApprovedForAll(owner, operator);
     };
 
-    public query func getOperator(tokenId: Nat) : async Result<Principal, Errors> {
+    public query func getOperator(tokenId: Nat) : async Principal {
         switch (_exists(tokenId)) {
             case true {
                 switch (_getApproved(tokenId)) {
                     case (?who) {
-                        return #ok(who);
+                        return who;
                     };
                     case (_) {
-                        return #ok(Principal.fromText("aaaaa-aa"));
+                        return Principal.fromText("aaaaa-aa");
                     };
                 }   
             };
             case (_) {
-                return #err(#TokenNotExist);
+                throw Error.reject("token not exist")
             };
         }
     };
 
-    public query func getUserInfo(who: Principal) : async Result<UserInfoExt, Errors> {
+    public query func getUserInfo(who: Principal) : async UserInfoExt {
         switch (users.get(who)) {
             case (?user) {
-                return #ok(_userInfotoExt(user));
+                return _userInfotoExt(user)
             };
             case _ {
-                return #err(#UserNotExist);
+                throw Error.reject("unauthorized");
             };
         };        
     };
@@ -541,31 +807,30 @@ shared(msg) actor class NFToken(
             };
         };
         let ret = Buffer.Buffer<TokenInfoExt>(tokenIds.size());
-    
         for(id in Iter.fromArray(tokenIds)) {
             ret.add(_tokenInfotoExt(_unwrap(tokens.get(id))));
         };
         return ret.toArray();
     };
 
-    public query func ownerOf(tokenId: Nat): async Result<Principal, Errors> {
+    public query func ownerOf(tokenId: Nat): async Principal {
         switch (_ownerOf(tokenId)) {
             case (?owner) {
-                return #ok(owner);
+                return owner;
             };
             case _ {
-                return #err(#TokenNotExist);
+                throw Error.reject("token not exist")
             };
         }
     };
 
-    public query func getTokenInfo(tokenId: Nat) : async Result<TokenInfoExt, Errors> {
+    public query func getTokenInfo(tokenId: Nat) : async TokenInfoExt {
         switch(tokens.get(tokenId)){
             case(?tokeninfo) {
-                return #ok(_tokenInfotoExt(tokeninfo));
+                return _tokenInfotoExt(tokeninfo);
             };
             case(_) {
-                return #err(#TokenNotExist);
+                throw Error.reject("token not exist");
             };
         };
     };

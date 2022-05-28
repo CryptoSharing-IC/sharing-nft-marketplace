@@ -3,6 +3,7 @@ import Dip721Card from './Dip721Card'
 import AppContext from "../../AppContext"
 import { Principal } from "@dfinity/principal"
 import { dip721 } from "canisters/dip721"
+import { sharing } from "canisters/sharing"
 
 export default function Dip721IdleCardList () {
     const { userPrincipal } = React.useContext(AppContext)
@@ -12,7 +13,8 @@ export default function Dip721IdleCardList () {
         if (!userPrincipal) {
             return []
         }
-        let tokenIds = await dip721.getTokenIdsForUserDip721(Principal.fromText(userPrincipal))
+        let tokenIds = await dip721.getTokenInfo(345)
+        console.log("token info: " + tokenIds)
         return (await Promise.all(tokenIds.map(id => dip721.getMetadataDip721(id))))
             .map(e => adapter(e))
             .map((e, index) => { return { ...e, ...{ id: tokenIds[index] } } })

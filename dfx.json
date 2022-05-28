@@ -5,11 +5,11 @@
       "type": "motoko"
     },
     "dip721": {
-      "main": "dip-721-nft-container/src/Main.mo",
+      "main": "ic-nft/src/main.mo",
       "type": "motoko"
     },
     "sharing": {
-      "main": "sharing-nft/src/Main.mo",
+      "main": "sharing-nft/src/main.mo",
       "type": "motoko"
     },
     "assets": {

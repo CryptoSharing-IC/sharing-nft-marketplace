@@ -2,8 +2,9 @@
 import Int "mo:base/Int";
 import Order "mo:base/Order";
 
-import Types "../base/Types";
+import Sharing "../nft/Sharing.did";
 import TokenDomain "../nft/TokenDomain";
+import Types "../base/Types";
 import Utils "../base/Utils";
 
 module {
@@ -11,7 +12,7 @@ module {
     public type LendId = Types.Id;
     public type Timestamp = Types.Timestamp;
 
-    public type MetadataDesc = TokenDomain.MetadataDesc;
+    public type TokenInfoExt = Sharing.TokenInfoExt;
 
     public type LendProfile = {
         id: LendId;
@@ -21,7 +22,7 @@ module {
         status: LendStatus;
         createdAt: Timestamp;
         updatedAt: Timestamp;
-        metadata: MetadataDesc;
+        metadata: TokenInfoExt;
     };
 
     public type Property = {
@@ -40,7 +41,7 @@ module {
         properties: [Property];
     };
 
-    public func createProfile(cmd: LendCreateCommand, id: LendId, owner: Principal, now: Timestamp, metadata: MetadataDesc) : LendProfile {
+    public func createProfile(cmd: LendCreateCommand, id: LendId, owner: Principal, now: Timestamp, metadata: Sharing.TokenInfoExt) : LendProfile {
         return {
             id = id ;
             listingId = cmd.listingId; 

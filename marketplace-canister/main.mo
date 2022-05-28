@@ -1,17 +1,18 @@
 
 import Array "mo:base/Array";
 import Principal "mo:base/Principal";
-// import Result "mo:base/Result";
+import Result "mo:base/Result";
 import Time "mo:base/Time";
 
 import LendDomain "lend/LendDomain";
 import LendRepositories "lend/LendRepositories";
 import ListingDomain "listing/ListingDomain";
 import ListingRepositories "listing/ListingRepositories";
+import Sharing "nft/Sharing.did";
+import TokenDomain "nft/TokenDomain";
+import Types "base/Types";
 import UserDomain "user/UserDomain";
 import UserRepositories "user/UserRepositories";
-import Types "base/Types";
-import TokenDomain "nft/TokenDomain";
 
 shared(msg) actor class Marketplace() {
 
@@ -28,11 +29,7 @@ shared(msg) actor class Marketplace() {
 
     public type LendIdCommand = LendDomain.LendIdCommand;
 
-    public type TokenProfile = TokenDomain.TokenProfile;
-
     public type Error = Types.Error;
-
-    public type NFTActor = TokenDomain.NFTActor;
 
     /// ID Generator
     stable var idGenerator : Nat64 = 10001;
@@ -96,15 +93,9 @@ shared(msg) actor class Marketplace() {
 
         let nftId = cmd.nftId;
         let nftCanisterId = cmd.canisterId;
-        let nftCansiter : NFTActor = actor(nftCansterId);
-        let metadataRes = await nftCansiter.getMetadataDip721(nftId);
-
-        let metadata = switch (metadataRes) {
-            case (#Ok(m)) m;
-            case (_) [];
-        };
-
-        let listingProfile = ListingDomain.createProfile(cmd, id, caller, timeNow_(), metadata);
+        let nftCansiter : Sharing.NFToken = actor(nftCansterId);
+        let tokenInfo : Sharing.TokenInfoExt = await nftCansiter.getTokenInfo(nftId);
+        let listingProfile = ListingDomain.createProfile(cmd, id, caller, timeNow_(), tokenInfo);
         listingDB := ListingRepositories.saveListing(listingDB, listingRepository, listingProfile);
         id
     };
@@ -113,35 +104,35 @@ shared(msg) actor class Marketplace() {
     // Notice: 前端把第三方 nft 平台上这个nft的转为 marketplace canister 后调用些方法
     // 需要验证对应的NFT是否属于 marketplace canister
     // TODO 到我方的衍生合约上铸造一个 wNft, 并返回 wNFT id , 供用户赎回使用
-    public shared(msg) func listingNFT(cmd: ListingIdCommand) : async Result<Nat64, Error> {
-        let caller = msg.caller;
-        let nftCansiter : NFTActor = actor(nftCansterId);
-        let nftIds = await nftCansiter.getTokenIdsForUserDip721(caller);
+    // public shared(msg) func listingNFT(cmd: ListingIdCommand) : async Result<Nat64, Error> {
+    //     let caller = msg.caller;
+    //     let nftCansiter : Sharing.NFToken = actor(nftCansterId);
+        // let nftIds: [Sharing.TokenInfoExt] = await nftCansiter.getUserTokens(caller);
 
         
-        switch (ListingRepositories.getListing(listingDB, listingRepository, cmd.id)) {
-            case (?l) {
-                func f(id: Nat64) : Bool {
-                    id == l.nftId
-                };
+    //     switch (ListingRepositories.getListing(listingDB, listingRepository, cmd.id)) {
+    //         case (?l) {
+    //             func f(id: Nat64) : Bool {
+    //                 id == l.nftId
+    //             };
 
-                switch (Array.find<Nat64>(nftIds, f)) {
-                    case (?_) {
-                        // 铸造 wNft TODO
-                        let wNftId = getIdAndIncrementOne();
+    //             switch (Array.find<Nat64>(nftIds, f)) {
+    //                 case (?_) {
+    //                     // 铸造 wNft TODO
+    //                     let wNftId = getIdAndIncrementOne();
 
-                        return #Ok(wNftId);
-                    };
-                    case (null) {
-                        return #Err(#unauthorized);
-                    }
-                }
-            };
-            case (null) {
-                return #Err(#notFound);
-            }
-        }
-    };
+    //                     return #Ok(wNftId);
+    //                 };
+    //                 case (null) {
+    //                     return #Err(#unauthorized);
+    //                 }
+    //             }
+    //         };
+    //         case (null) {
+    //             return #Err(#notFound);
+    //         }
+    //     }
+    //    };
 
     /// 下回赎回 redeem nft TODO
     /// 下回时需要检查 listing 的状态，租期是否结束，
@@ -193,7 +184,7 @@ shared(msg) actor class Marketplace() {
 
     /// 租入 Lend nft
     /// 校验支付信息，成功后 mint nft 并返回 TODO
-    public shared(msg) func validLend(cmd: LendIdCommand) : async Result<TokenProfile, Error> {
+    public shared(msg) func validLend(cmd: LendIdCommand) : async Result<Sharing.TokenInfoExt, Error> {
         #Err(#unauthorized)
     };
 

@@ -2,8 +2,9 @@
 import Int "mo:base/Int";
 import Order "mo:base/Order";
 
-import Types "../base/Types";
+import Sharing "../nft/Sharing.did";
 import TokenDomain "../nft/TokenDomain";
+import Types "../base/Types";
 import Utils "../base/Utils";
 
 module {
@@ -12,12 +13,12 @@ module {
     public type ListingProperty = Types.Property<NFTPropertyKey, Text>;
     public type Timestamp = Types.Timestamp;
 
-    public type MetadataDesc = TokenDomain.MetadataDesc;
+    public type TokenInfoExt = Sharing.TokenInfoExt;
 
     public type ListingProfile = {
         id: ListingId;
         canisterId: Principal;
-        nftId: Nat64;
+        nftId: Nat;
         name: Text;
         availableUtil: Timestamp;
         price: PriceUnit;  // 此数值表示价格，例如： 10000 表示 1 ICP
@@ -25,7 +26,7 @@ module {
         status: ListingStatus;
         createdAt: Timestamp;
         updatedAt: Timestamp;
-        metadata: MetadataDesc;
+        metadata: TokenInfoExt;
     };
 
     public type NFTPropertyKey = {
@@ -48,14 +49,14 @@ module {
 
     public type ListingCreateCommand = {
         canisterId: Principal;
-        nftId: Nat64;
+        nftId: Nat;
         name: Text;
         availableUtil: Timestamp;
         price: PriceUnit;  // 此数值表示价格，例如： 10000 表示 1 ICP
-        metadata: MetadataDesc;
+        metadata: Sharing.TokenInfoExt;
     };
 
-    public func createProfile(cmd: ListingCreateCommand, id: ListingId, owner: Principal, now: Timestamp, metadata: MetadataDesc) : ListingProfile {
+    public func createProfile(cmd: ListingCreateCommand, id: ListingId, owner: Principal, now: Timestamp, metadata: Sharing.TokenInfoExt) : ListingProfile {
         return {
             id = id ;
             canisterId = cmd.canisterId ;
@@ -74,14 +75,14 @@ module {
     public type ListingEditCommand = {
         id: ListingId;
         canisterId: Principal;
-        nftId: Nat64;
+        nftId: Nat;
         name: Text;
         availableUtil: Timestamp;
         price: PriceUnit;  // 此数值表示价格，例如： 10000 表示 1 ICP
         owner: Principal;
         status: ListingStatus;
         createdAt: Timestamp;
-        metadata: MetadataDesc;
+        metadata: Sharing.TokenInfoExt;
     };
 
     public func updateListing(cmd: ListingEditCommand, profile: ListingProfile, now: Timestamp) : ListingProfile {
