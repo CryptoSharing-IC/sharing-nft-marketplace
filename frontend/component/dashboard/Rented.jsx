@@ -1,6 +1,6 @@
 import React from "react"
 import { Link } from "react-router-dom"
-import Dip721IdleCardList from "./Dip721CardList"
+import IdleCardList from "./IdleCardList"
 
 export default function Rented () {
   return (
@@ -20,7 +20,7 @@ export default function Rented () {
         </Link>
       </div>
       <div className="flex flex-row flex-wrap">
-        <Dip721IdleCardList></Dip721IdleCardList>
+        <IdleCardList></IdleCardList>
       </div>
     </>
   )

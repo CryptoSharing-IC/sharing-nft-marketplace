@@ -5,7 +5,7 @@ import { marketplace } from "canisters/marketplace"
 
 
 import NftCard from "./Dip721Card"
-import Dip721IdleCardList from "./Dip721CardList"
+import IdleCardList from "./IdleCardList"
 
 export default function IdleList () {
 
@@ -26,7 +26,7 @@ export default function IdleList () {
         </Link>
       </div>
       <div className="flex flex-row flex-wrap justify-center">
-        <Dip721IdleCardList className="grow"></Dip721IdleCardList>
+        <IdleCardList className="grow"></IdleCardList>
       </div>
 
     </>

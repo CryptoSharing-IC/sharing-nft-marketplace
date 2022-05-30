@@ -1,6 +1,6 @@
 import React from "react"
 import { Link } from "react-router-dom"
-import Dip721IdleCardList from "./Dip721CardList"
+import Dip721IdleCardList from "./IdleCardList"
 export default function Listed () {
   return (
     <>
