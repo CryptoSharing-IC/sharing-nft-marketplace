@@ -1,5 +1,5 @@
 import React from 'react'
-import Dip721Card from './NftCard'
+import NftCard from './NftCard'
 import AppContext from "../../AppContext"
 import { Principal } from "@dfinity/principal"
 import { dip721 } from "canisters/dip721"
@@ -64,7 +64,7 @@ export default function Dip721IdleCardList () {
             </div>
             <div className="flex flex-row flex-wrap justify-between gap-1">
                 {
-                    nfts.map((e, index) => (<Dip721Card key={index} nftData={e}></Dip721Card>))
+                    nfts.map((e, index) => (<NftCard key={index} nftData={e}></NftCard>))
                 }
             </div>
         </>
