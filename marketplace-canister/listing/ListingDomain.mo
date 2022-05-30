@@ -6,6 +6,7 @@ import Sharing "../nft/Sharing.did";
 import TokenDomain "../nft/TokenDomain";
 import Types "../base/Types";
 import Utils "../base/Utils";
+import Voice "../voice/Voice";
 
 module {
     
@@ -27,6 +28,7 @@ module {
         createdAt: Timestamp;
         updatedAt: Timestamp;
         metadata: TokenInfoExt;
+        voice: Voice.Voice;
     };
 
     public type NFTPropertyKey = {
@@ -56,7 +58,8 @@ module {
         metadata: Sharing.TokenInfoExt;
     };
 
-    public func createProfile(cmd: ListingCreateCommand, id: ListingId, owner: Principal, now: Timestamp, metadata: Sharing.TokenInfoExt) : ListingProfile {
+    public func createProfile(cmd: ListingCreateCommand, id: ListingId, owner: Principal, now: Timestamp, metadata: Sharing.TokenInfoExt, voice: Voice.Voice) : ListingProfile {
+
         return {
             id = id ;
             canisterId = cmd.canisterId ;
@@ -69,6 +72,7 @@ module {
             createdAt = now ;
             updatedAt = now ;
             metadata = metadata;
+            voice = voice;
         };
     };
 
@@ -85,7 +89,7 @@ module {
         metadata: Sharing.TokenInfoExt;
     };
 
-    public func updateListing(cmd: ListingEditCommand, profile: ListingProfile, now: Timestamp) : ListingProfile {
+    public func updateListing(cmd: ListingEditCommand, profile: ListingProfile, now: Timestamp, voice: Voice.Voice) : ListingProfile {
         assert(cmd.id == profile.id);
         {
             id = profile.id ;
@@ -99,6 +103,7 @@ module {
             createdAt = profile.createdAt ;
             updatedAt = now ;
             metadata = cmd.metadata;
+            voice = voice;
         }
     };
 

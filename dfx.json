@@ -1,5 +1,10 @@
 {
   "canisters": {
+    "ledger": {
+      "type": "custom",
+      "wasm": "ledger.wasm",
+      "candid": "ledger.private.did"
+    },
     "marketplace": {
       "main": "marketplace-canister/main.mo",
       "type": "motoko"

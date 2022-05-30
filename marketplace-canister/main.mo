@@ -1,9 +1,11 @@
 
 import Array "mo:base/Array";
+import Blob "mo:base/Blob";
 import Principal "mo:base/Principal";
 import Result "mo:base/Result";
 import Time "mo:base/Time";
 
+import Account "./Account/Account";
 import LendDomain "lend/LendDomain";
 import LendRepositories "lend/LendRepositories";
 import ListingDomain "listing/ListingDomain";
@@ -13,8 +15,9 @@ import TokenDomain "nft/TokenDomain";
 import Types "base/Types";
 import UserDomain "user/UserDomain";
 import UserRepositories "user/UserRepositories";
+import Voice "./voice/Voice";
 
-shared(msg) actor class Marketplace() {
+shared(msg) actor class Marketplace() = self {
 
     public type Result<X, Y> = Types.Result<X, Y>;
 
@@ -57,6 +60,10 @@ shared(msg) actor class Marketplace() {
     /// --------------------------- NFT Canister management --------------------------- ///
     stable var canisters: [Principal] = [];
 
+    //voice
+    stable var voiceStableDb : Voice.StableDB = Voice.stableDbInitValue();
+    let voiceStore   = Voice.Store();
+
     /// --------------------------- User API ---------------------------- ///
     /// 注册新用户，注册成功返回true, 已经注册过的用户返回false
     public shared(msg) func registerUser() : async Bool {
@@ -93,9 +100,19 @@ shared(msg) actor class Marketplace() {
 
         let nftId = cmd.nftId;
         let nftCanisterId = cmd.canisterId;
-        let nftCansiter : Sharing.NFToken = actor(nftCansterId);
+        let nftCansiter : Sharing.NFToken = actor(nftCansterId); //todo, should use the third party did file.
         let tokenInfo : Sharing.TokenInfoExt = await nftCansiter.getTokenInfo(nftId);
-        let listingProfile = ListingDomain.createProfile(cmd, id, caller, timeNow_(), tokenInfo);
+        
+        let voiceId = getIdAndIncrementOne();
+        let voice: Voice.Voice = {
+            id = voiceId;
+            listingId = id;
+            accountIdentifier = Account.accountIdentifier(Principal.fromActor(self), Blob.fromArray(Account.beBytes64(voiceId)));
+            amount = cmd.price.decimals;
+            state = #unpaid;
+        };
+
+        let listingProfile = ListingDomain.createProfile(cmd, id, caller, timeNow_(), tokenInfo, voice);
         listingDB := ListingRepositories.saveListing(listingDB, listingRepository, listingProfile);
         id
     };
@@ -252,6 +269,16 @@ shared(msg) actor class Marketplace() {
     /// 辅助方法，获取当前时间
     func timeNow_() : Int {
         Time.now()
+    };
+
+
+        // upgrade functions
+    system func preupgrade() {
+       voiceStableDb := voiceStore.preUpgrade();
+    };
+
+    system func postupgrade() {
+        voiceStore.postUpgrade(voiceStableDb);
     };
 
 };
