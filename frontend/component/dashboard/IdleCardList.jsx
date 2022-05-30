@@ -1,5 +1,5 @@
 import React from 'react'
-import Dip721Card from './Dip721Card'
+import Dip721Card from './NftCard'
 import AppContext from "../../AppContext"
 import { Principal } from "@dfinity/principal"
 import { dip721 } from "canisters/dip721"
@@ -44,10 +44,29 @@ export default function Dip721IdleCardList () {
     }, [userPrincipal])
 
     return (
-        <div className="flex flex-row flex-wrap justify-between gap-1">
-            {
-                nfts.map((e, index) => (<Dip721Card key={index} nftData={e}></Dip721Card>))
-            }
-        </div>
+        <>
+            <div className="tabs tabs-boxed">
+                <Link className="tab lg: tab-lg" to="/dashboard/all">
+                    All
+                </Link>
+                <Link className="tab lg: tab-lg tab-active" to="/dashboard/idle">
+                    Idle
+                </Link>
+                <Link className="tab lg: tab-lg " to="/dashboard/listed">
+                    Listed
+                </Link>
+                <Link className="tab lg: tab-lg" to="/dashboard/rented">
+                    Rented
+                </Link>
+            </div>
+            <div className="flex flex-row flex-wrap justify-center">
+                <IdleCardList className="grow"></IdleCardList>
+            </div>
+            <div className="flex flex-row flex-wrap justify-between gap-1">
+                {
+                    nfts.map((e, index) => (<Dip721Card key={index} nftData={e}></Dip721Card>))
+                }
+            </div>
+        </>
     )
 }
