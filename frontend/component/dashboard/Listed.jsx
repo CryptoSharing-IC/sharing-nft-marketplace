@@ -19,7 +19,7 @@ export default function Listed () {
         </Link>
       </div>
       <div className="flex flex-row flex-wrap">
-        <Dip721IdleCardList></Dip721IdleCardList>
+        Listed
       </div>
     </>
   )
