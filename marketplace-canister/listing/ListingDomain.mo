@@ -53,6 +53,7 @@ module {
         canisterId: Principal;
         nftId: Nat;
         name: Text;
+        desc: Text;
         availableUtil: Timestamp;
         price: PriceUnit;  // 此数值表示价格，例如： 10000 表示 1 ICP
         metadata: Sharing.TokenInfoExt;
@@ -64,7 +65,8 @@ module {
             id = id ;
             canisterId = cmd.canisterId ;
             nftId = cmd.nftId ;
-            name = cmd.name ;
+            name = cmd.name;
+            desc = cmd.desc;
             availableUtil = cmd.availableUtil ;
             price = cmd.price ;
             owner = owner ;
