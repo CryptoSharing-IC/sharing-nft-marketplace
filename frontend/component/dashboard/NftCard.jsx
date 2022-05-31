@@ -1,5 +1,5 @@
 import React from 'react'
-import LengingDetail from './LengingDetail'
+import LengingStep from './LengingStep'
 import ListingStep from './ListingStep';
 
 export default function NftCard (props) {

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { marketplace } from "canisters/marketplace"
 import { useForm } from "react-hook-form";
 
@@ -14,6 +14,8 @@ export default function LengingStep (props) {
             price: ""
         }
     )
+    let [showProcess, setShowProcess] = useState(false);
+
     const handleChange = e => {
         setState({
             ...state,
@@ -31,7 +33,7 @@ export default function LengingStep (props) {
             alert("输入不合法!");
             return
         }
-
+        setShowProcess(true);
         let reponse = await marketplace.preListingNFT({
             canisterId: dip721CanisteId,
             nftId: state.nftData.id,
@@ -42,7 +44,9 @@ export default function LengingStep (props) {
             minPeriod: state.minPeriod,
             metadata: props.nftData
         })
-
+        // check the result 
+        console.log(reponse)
+        props.setCurrentStep(2)
     }
     return (
         <form>
@@ -60,13 +64,13 @@ export default function LengingStep (props) {
                     <label className="label">
                         <span className="label-text">Available util:</span>
                     </label>
-                    <input type="datetime-local" className=" input-bordered  input w-full max-w-xs" name="availableUtil" value={state.availableUtil} onChange={handleChange} {...register("availableUtil", { required: true })} />
+                    <input type="datetime-local" className=" input-bordered  input w-full max-w-xs" name="availableUtil" value={state.availableUtil} onChange={handleChange} />
 
                     <label className="label">
                         <span className="label-text">lend period(day):</span>
                     </label>
                     <div className='flex flex-row items-center'>
-                        <input type="number" className=" input-bordered  input w-20 max-w-xs" name="minPeriod" value={state.minPeriod} onChange={handleChange}  {...register("minPeriod", { required: true })} />
+                        <input type="number" className=" input-bordered  input w-20 max-w-xs" name="minPeriod" value={state.minPeriod} onChange={handleChange} />
                         <span>天</span>
                     </div>
 
@@ -74,12 +78,12 @@ export default function LengingStep (props) {
                     <label className="label">
                         <span className="label-text">Price(ICP/day):</span>
                     </label>
-                    <input type="text" className=" input-bordered  input w-full max-w-xs" name="price" value={state.price} onChange={handleChange} {...register("price", { pattern: /^\d+\.\d{0,4}$/g })} />
-
-                    <div className="modal-action justify-end">
-                        <label htmlFor="listing-step" className="btn">取消</label>
-                        <label htmlFor="lending-modal" className="btn" onClick={() => { props.setCurrentStep(2) }}>下一步</label>
-                    </div>
+                    <input type="text" className=" input-bordered  input w-full max-w-xs" name="price" value={state.price} onChange={handleChange} />
+                    {showProcess ? (<progress className="progress w-56"></progress>) :
+                        (<div className="modal-action justify-end">
+                            <label htmlFor="listing-step" className="btn">取消</label>
+                            <button className="btn" onClick={async () => { onSubmit() }}>下一步</button>
+                        </div>)}
                 </div>
             </div>
         </form>
