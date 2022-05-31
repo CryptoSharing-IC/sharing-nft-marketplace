@@ -3,12 +3,11 @@ import { marketplace } from "canisters/marketplace"
 import { useForm } from "react-hook-form";
 
 
-export default function LengingDetail (props) {
+export default function LengingStep (props) {
     const { register, errors, handleSubmit } = useForm()
 
     let [state, setState] = React.useState(
         {
-            nftData: props.nftData,
             availableUtil: "",
             minPeriod: "",
             maxPeriod: "",
@@ -28,26 +27,29 @@ export default function LengingDetail (props) {
         //TODO, add validater code
         let dip721CanisteId = "rrkah-fqaaa-aaaaa-aaaaq-cai"
         if (!state.availableUtil || !state.minPeriod || !state.price) {
-
+            //temp code, 
+            alert("输入不合法!");
             return
         }
 
-        let reponse = await marketplace.listingNFT({
+        let reponse = await marketplace.preListingNFT({
             canisterId: dip721CanisteId,
             nftId: state.nftData.id,
             name: state.nftData.name,
+            desc: state.nftData.desc,
             availableUtil: state.availableUtil,
-            minPeriod: state.minPeriod,
             price: state.price,
+            minPeriod: state.minPeriod,
+            metadata: props.nftData
         })
-        alert(reponse)
+
     }
     return (
         <form>
             <ul className="steps">
                 <li className="step step-primary" >Listing</li>
                 <li className="step">Staking</li>
-                <li className="step">mint wNft</li>
+                <li className="step">Mint</li>
                 <li className="step">Finished</li>
             </ul>
             <div className="card card-side bg-base-100">
