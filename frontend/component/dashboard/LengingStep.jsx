@@ -1,20 +1,18 @@
 import React, { useState } from 'react'
 import { marketplace } from "canisters/marketplace"
 import { useForm } from "react-hook-form";
-
+import { Principal } from "@dfinity/principal";
 
 export default function LengingStep (props) {
-    const { register, errors, handleSubmit } = useForm()
 
     let [state, setState] = React.useState(
         {
-            availableUtil: "",
-            minPeriod: "",
-            maxPeriod: "",
-            price: ""
+            availableUtil: "2022-06-08T08: 30",
+            minPeriod: 1,
+            price: 1
         }
     )
-    let [showProcess, setShowProcess] = useState(false);
+    let [show, setShow] = useState("ACTION");
 
     const handleChange = e => {
         setState({
@@ -33,20 +31,27 @@ export default function LengingStep (props) {
             alert("输入不合法!");
             return
         }
-        setShowProcess(true);
-        let reponse = await marketplace.preListingNFT({
+        setShow("PROGRESS");
+        let preListingArg = {
             canisterId: dip721CanisteId,
-            nftId: state.nftData.id,
-            name: state.nftData.name,
-            desc: state.nftData.desc,
-            availableUtil: state.availableUtil,
-            price: state.price,
+            nftId: props.nftData.index,
+            name: props.attributes?.name || "test name",
+            desc: props.attributes?.desc || "test desc",
+            // availableUtil: Date.parse(state.availableUtil) / 1000,
+            //price: { decimals: state.price, symbol: "ICP" },
             minPeriod: state.minPeriod,
-            metadata: props.nftData
-        })
+            //metadata: props.nftData
+        }
+        console.log("perListingArg: " + JSON.stringify(preListingArg))
+        let reponse = await marketplace.preListingNFT(preListingArg)
         // check the result 
         console.log(reponse)
-        props.setCurrentStep(2)
+        if (reponse?.Ok) {
+            props.setCurrentStep(2);
+        } else {
+            setShow("ERROR_RESULT")
+        }
+
     }
     return (
         <form>
@@ -79,11 +84,24 @@ export default function LengingStep (props) {
                         <span className="label-text">Price(ICP/day):</span>
                     </label>
                     <input type="text" className=" input-bordered  input w-full max-w-xs" name="price" value={state.price} onChange={handleChange} />
-                    {showProcess ? (<progress className="progress w-56"></progress>) :
-                        (<div className="modal-action justify-end">
-                            <label htmlFor="listing-step" className="btn">取消</label>
-                            <button className="btn" onClick={async () => { onSubmit() }}>下一步</button>
-                        </div>)}
+
+                    {
+                        {
+
+                            "PROGRESS": (<progress className="progress w-56"></progress>),
+                            "ERROR_RESULT": (<div class="alert alert-error shadow-lg">
+                                <div>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    <span>Listing NFT failed!</span>
+                                </div>
+                            </div>)
+                        }[show]
+                    }
+                    <div className="modal-action justify-end">
+                        <label htmlFor="listing-step" className="btn" disabled={show == "PROGRESS" ? "disabled" : ""}>取消</label>
+                        <button className="btn" onClick={async () => { onSubmit() }} disabled={show == "PROGRESS" ? "disabled" : ""}>下一步</button>
+                        <div />
+                    </div>
                 </div>
             </div>
         </form>
