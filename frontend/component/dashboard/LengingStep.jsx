@@ -7,12 +7,12 @@ export default function LengingStep (props) {
 
     let [state, setState] = React.useState(
         {
-            availableUtil: "2022-06-08T08: 30",
+            availableUtil: "",
             minPeriod: 1,
             price: 1
         }
     )
-    let [show, setShow] = useState("ACTION");
+    let [show, setShow] = useState("");
 
     const handleChange = e => {
         setState({
@@ -35,12 +35,11 @@ export default function LengingStep (props) {
         let preListingArg = {
             canisterId: dip721CanisteId,
             nftId: props.nftData.index,
-            name: props.attributes?.name || "test name",
-            desc: props.attributes?.desc || "test desc",
-            // availableUtil: Date.parse(state.availableUtil) / 1000,
-            //price: { decimals: state.price, symbol: "ICP" },
-            minPeriod: state.minPeriod,
-            //metadata: props.nftData
+            name: props.nftData.name,
+            desc: props.nftData.desc,
+            availableUtil: Date.parse(state.availableUtil) / 1000,
+            price: { decimals: state.price, symbol: "ICP" },
+            minPeriod: state.minPeriod
         }
         console.log("perListingArg: " + JSON.stringify(preListingArg))
         let reponse = await marketplace.preListingNFT(preListingArg)
@@ -54,15 +53,15 @@ export default function LengingStep (props) {
 
     }
     return (
-        <form>
-            <ul className="steps">
+        <div className='flex flex-col'>
+            <ul className="steps justify-center">
                 <li className="step step-primary" >Listing</li>
                 <li className="step">Staking</li>
                 <li className="step">Mint</li>
                 <li className="step">Finished</li>
             </ul>
-            <div className="card card-side bg-base-100">
-                <figure><img src={props.nftData.metadata[0].location.Web} alt="img" /></figure>
+            <div className="card card-side bg-base-50 ">
+                <figure className="grow "><img src={props.nftData.Web} alt="img" /></figure>
                 <div className="card-body">
                     <h2 className="card-title">{props.nftData.name}</h2>
                     <p>{props.nftData.desc}</p>
@@ -104,6 +103,6 @@ export default function LengingStep (props) {
                     </div>
                 </div>
             </div>
-        </form>
+        </div>
     )
 }

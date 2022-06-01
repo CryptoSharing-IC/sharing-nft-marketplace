@@ -28,7 +28,7 @@ export default function NftCard (props) {
                     </div>
                 </div>
             </div>
-            <ListingStep nftData={props.nftData}></ListingStep>
+            <ListingStep nftData={{ ...attributes, index: props.nftData.index, Web: props.nftData.metadata[0].location.Web }}></ListingStep>
         </>
     )
 }
