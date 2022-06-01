@@ -6,11 +6,11 @@ import Result "mo:base/Result";
 import Time "mo:base/Time";
 
 import Account "./Account/Account";
+import Dip721 "../dip721.did";
 import LendDomain "lend/LendDomain";
 import LendRepositories "lend/LendRepositories";
 import ListingDomain "listing/ListingDomain";
 import ListingRepositories "listing/ListingRepositories";
-import Sharing "nft/Sharing.did";
 import TokenDomain "nft/TokenDomain";
 import Types "base/Types";
 import UserDomain "user/UserDomain";
@@ -93,15 +93,22 @@ shared(msg) actor class Marketplace() = self {
     // 预上架 nft 
     // 获取 nft 的 metadata
     // 生成 listing 对象, 状态为 Pending (未质押) 
-    public shared(msg) func preListingNFT(cmd: ListingCreateCommand) : async Nat64 {
+    public shared(msg) func preListingNFT(cmd: ListingCreateCommand) : async Result<Nat64, Error> {
         
         let caller = msg.caller;
         let id = getIdAndIncrementOne();
 
-        let nftId = cmd.nftId;
-        let nftCanisterId = cmd.canisterId;
-        let nftCansiter : Sharing.NFToken = actor(nftCansterId); //todo, should use the third party did file.
-        let tokenInfo : Sharing.TokenInfoExt = await nftCansiter.getTokenInfo(nftId);
+        let nftCansiter : Dip721.NFToken = actor(cmd.canisterId); //todo, should use the third party did file.
+        let tokenInfoRes : Dip721.Result_2 = await nftCansiter.getTokenInfo(cmd.nftId);
+        let tokenInfo: Dip721.TokenInfoExt =
+        switch(tokenInfoRes) {
+            case(#ok(tokenInfo)) {
+                tokenInfo;
+            };
+            case(_) {
+                return #Err(#notFound);
+            }
+        };
         
         let voiceId = getIdAndIncrementOne();
         let voice: Voice.Voice = {
@@ -114,7 +121,7 @@ shared(msg) actor class Marketplace() = self {
 
         let listingProfile = ListingDomain.createProfile(cmd, id, caller, timeNow_(), tokenInfo, voice);
         listingDB := ListingRepositories.saveListing(listingDB, listingRepository, listingProfile);
-        id
+        #Ok(id)
     };
 
     // 上架 nft
@@ -175,33 +182,33 @@ shared(msg) actor class Marketplace() = self {
     };
 
     /// 预租入 Lend 流程，先记录租入信息，例如哪个已经上架的 nft等
-    public shared(msg) func preLendNFT(cmd: LendCreateCommand) : async Result<Nat64, Error> {
-        let caller = msg.caller;
-        let listingId = cmd.listingId;
+    // public shared(msg) func preLendNFT(cmd: LendCreateCommand) : async Result<Nat64, Error> {
+    //     let caller = msg.caller;
+    //     let listingId = cmd.listingId;
 
-        switch (ListingRepositories.getListing(listingDB, listingRepository, listingId)) {
-            case (?listing) {
-                if (listing.status != #Enable) {
-                    return #Err(#listingNotEnable);
-                };
+    //     switch (ListingRepositories.getListing(listingDB, listingRepository, listingId)) {
+    //         case (?listing) {
+    //             if (listing.status != #Enable) {
+    //                 return #Err(#listingNotEnable);
+    //             };
 
-                let lendId = getIdAndIncrementOne();
-                let now = timeNow_();
-                let metadata = listing.metadata;
-                let lendOrder = LendDomain.createProfile(cmd, lendId, caller, now, metadata);
+    //             let lendId = getIdAndIncrementOne();
+    //             let now = timeNow_();
+    //             let metadata = listing.metadata;
+    //             let lendOrder = LendDomain.createProfile(cmd, lendId, caller, now, metadata);
 
-                lendDB := LendRepositories.saveLend(lendDB, lendRepository, lendOrder);
+    //             lendDB := LendRepositories.saveLend(lendDB, lendRepository, lendOrder);
 
-                #Ok(lendId);
+    //             #Ok(lendId);
 
-            };
-            case (null) #Err(#listingNotFound);
-        }
-    };
+    //         };
+    //         case (null) #Err(#listingNotFound);
+    //     }
+    // };
 
     /// 租入 Lend nft
     /// 校验支付信息，成功后 mint nft 并返回 TODO
-    public shared(msg) func validLend(cmd: LendIdCommand) : async Result<Sharing.TokenInfoExt, Error> {
+    public shared(msg) func validLend(cmd: LendIdCommand) : async Result<Dip721.TokenInfoExt, Error> {
         #Err(#unauthorized)
     };
 

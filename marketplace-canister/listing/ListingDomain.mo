@@ -1,6 +1,7 @@
 
 import Int "mo:base/Int";
 import Order "mo:base/Order";
+import Text "mo:base/Text";
 
 import Sharing "../nft/Sharing.did";
 import TokenDomain "../nft/TokenDomain";
@@ -18,7 +19,7 @@ module {
 
     public type ListingProfile = {
         id: ListingId;
-        canisterId: Principal;
+        canisterId: Text;
         nftId: Nat;
         name: Text;
         availableUtil: Timestamp;
@@ -50,7 +51,7 @@ module {
     };
 
     public type ListingCreateCommand = {
-        canisterId: Principal;
+        canisterId: Text;
         nftId: Nat;
         name: Text;
         desc: Text;
@@ -80,7 +81,7 @@ module {
 
     public type ListingEditCommand = {
         id: ListingId;
-        canisterId: Principal;
+        canisterId: Text;
         nftId: Nat;
         name: Text;
         availableUtil: Timestamp;
