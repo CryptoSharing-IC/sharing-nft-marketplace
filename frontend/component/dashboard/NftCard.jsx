@@ -1,6 +1,6 @@
 import React from 'react'
 import LengingStep from './LengingStep'
-import ListingStep from './ListingStep';
+import ListingFlow from './ListingFlow';
 
 export default function NftCard (props) {
     let attributes = adapter(props.nftData);
@@ -28,7 +28,7 @@ export default function NftCard (props) {
                     </div>
                 </div>
             </div>
-            <ListingStep nftData={{ ...attributes, index: props.nftData.index, Web: props.nftData.metadata[0].location.Web }}></ListingStep>
+            <ListingFlow nftData={{ ...attributes, index: props.nftData.index, Web: props.nftData.metadata[0].location.Web }}></ListingFlow>
         </>
     )
 }
