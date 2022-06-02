@@ -25,7 +25,7 @@ export default function LengingStep (props) {
     async function onSubmit () {
         //点击下一步 先提示本次操作的结果, 如果成功就进入下一步
         //TODO, add validater code
-        let dip721CanisteId = "rrkah-fqaaa-aaaaa-aaaaq-cai"
+        let dip721CanisteId = "rkp4c-7iaaa-aaaaa-aaaca-cai"
         if (!state.availableUtil || !state.minPeriod || !state.price) {
             //temp code, 
             alert("输入不合法!");
@@ -46,7 +46,7 @@ export default function LengingStep (props) {
         // check the result 
         console.log(reponse)
         if (reponse?.Ok) {
-            props.setCurrentStep(2);
+            props.nextStep();
         } else {
             setShow("ERROR_RESULT")
         }
