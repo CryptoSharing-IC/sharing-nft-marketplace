@@ -28,7 +28,7 @@ module {
         status: ListingStatus;
         createdAt: Timestamp;
         updatedAt: Timestamp;
-        metadata: TokenInfoExt;
+        //metadata: TokenInfoExt;
         voice: Voice.Voice;
     };
 
@@ -57,7 +57,7 @@ module {
         desc: Text;
         availableUtil: Timestamp;
         price: PriceUnit;  // 此数值表示价格，例如： 10000 表示 1 ICP
-        metadata: Sharing.TokenInfoExt;
+        //metadata: Sharing.TokenInfoExt;
     };
 
     public func createProfile(cmd: ListingCreateCommand, id: ListingId, owner: Principal, now: Timestamp, metadata: Sharing.TokenInfoExt, voice: Voice.Voice) : ListingProfile {
@@ -74,7 +74,7 @@ module {
             status = #Pending;
             createdAt = now ;
             updatedAt = now ;
-            metadata = metadata;
+            //metadata = metadata;
             voice = voice;
         };
     };
