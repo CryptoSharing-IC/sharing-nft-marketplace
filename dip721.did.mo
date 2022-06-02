@@ -70,8 +70,8 @@ module {
   };
   public type Record = { #metadata : ?TokenMetadata__1; #user : Principal };
   public type Result = { #ok : Principal; #err : Errors };
-  public type Result_1 = { #ok : UserInfoExt; #err : Errors };
-  public type Result_2 = { #ok : TokenInfoExt; #err : Errors };
+  public type Result_1 = { #Ok : UserInfoExt; #Err : Errors };
+  public type Result_2 = { #Ok : TokenInfoExt; #Err : Errors };
   public type Time = Int;
   public type TokenInfoExt = {
     owner : Principal;

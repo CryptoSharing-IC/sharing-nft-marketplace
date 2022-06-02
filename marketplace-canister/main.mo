@@ -88,7 +88,12 @@ shared(msg) actor class Marketplace() = self {
     public query(msg) func getUser(user: Principal) : async ?UserProfile {
         UserRepositories.getUser(userDB, userRepository, user)
     };
+    
+    public query func getCanisterPrincipal(): async Text {
+        Principal.toText(Principal.fromActor(self));
+    };
 
+    //todo, 以nft为一个主体, 多次上架同一个nft只会更新一个listing对象
     /// ---------------------------- Listing API ---------------------------- ///
     // 预上架 nft 
     // 获取 nft 的 metadata
@@ -102,7 +107,7 @@ shared(msg) actor class Marketplace() = self {
         let tokenInfoRes : Dip721.Result_2 = await nftCansiter.getTokenInfo(cmd.nftId);
         let tokenInfo: Dip721.TokenInfoExt =
         switch(tokenInfoRes) {
-            case(#ok(tokenInfo)) {
+            case(#Ok(tokenInfo)) {
                 tokenInfo;
             };
             case(_) {

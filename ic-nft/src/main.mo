@@ -60,7 +60,7 @@ shared(msg) actor class NFToken(
         #Ok: (Nat, Nat);
         #Err: Errors;
     };
-    public type Result<Ok, Err> = {#ok: Ok; #err: Errors};
+    public type Result<ok, err> = {#Ok: ok; #Err: Errors};
     private stable var logo_ : Text = _logo; // base64 encoded image
     private stable var name_ : Text = _name;
     private stable var symbol_ : Text = _symbol;
@@ -507,15 +507,15 @@ shared(msg) actor class NFToken(
             case true {
                 switch (_getApproved(tokenId)) {
                     case (?who) {
-                        return #ok(who);
+                        return #Ok(who);
                     };
                     case (_) {
-                        return #ok(Principal.fromText("aaaaa-aa"));
+                        return #Ok(Principal.fromText("aaaaa-aa"));
                     };
                 }   
             };
             case (_) {
-                return #err(#TokenNotExist);
+                return #Err(#TokenNotExist);
             };
         }
     };
@@ -523,10 +523,10 @@ shared(msg) actor class NFToken(
     public query func getUserInfo(who: Principal) : async Result<UserInfoExt, Errors> {
         switch (users.get(who)) {
             case (?user) {
-                return #ok(_userInfotoExt(user));
+                return #Ok(_userInfotoExt(user));
             };
             case _ {
-                return #err(#UserNotExist);
+                return #Err(#UserNotExist);
             };
         };        
     };
@@ -551,10 +551,10 @@ shared(msg) actor class NFToken(
     public query func ownerOf(tokenId: Nat): async Result<Principal, Errors> {
         switch (_ownerOf(tokenId)) {
             case (?owner) {
-                return #ok(owner);
+                return #Ok(owner);
             };
             case _ {
-                return #err(#TokenNotExist);
+                return #Err(#TokenNotExist);
             };
         }
     };
@@ -562,10 +562,10 @@ shared(msg) actor class NFToken(
     public query func getTokenInfo(tokenId: Nat) : async Result<TokenInfoExt, Errors> {
         switch(tokens.get(tokenId)){
             case(?tokeninfo) {
-                return #ok(_tokenInfotoExt(tokeninfo));
+                return #Ok(_tokenInfotoExt(tokeninfo));
             };
             case(_) {
-                return #err(#TokenNotExist);
+                return #Err(#TokenNotExist);
             };
         };
     };
