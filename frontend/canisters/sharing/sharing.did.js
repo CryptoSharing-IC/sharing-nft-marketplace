@@ -1,0 +1,1 @@
+/Users/cangao/Desktop/workspace/sharing-nft-marketplace/.dfx/local/canisters/sharing/sharing.did.js
