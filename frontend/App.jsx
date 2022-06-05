@@ -18,6 +18,7 @@ function App () {
     sharingCanisterId: "rno2w-sqaaa-aaaaa-aaacq-cai",
     ledgerCanisterId: "qaa6y-5yaaa-aaaaa-aaafa-cai",
   }
+
   return (
     <AppContext.Provider
       value={{ connected, setConnected, userPrincipal, setUserPrincipal, canisters }}
