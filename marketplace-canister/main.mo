@@ -1,6 +1,7 @@
 
 import Array "mo:base/Array";
 import Blob "mo:base/Blob";
+import Prelude "mo:base/Prelude";
 import Principal "mo:base/Principal";
 import Result "mo:base/Result";
 import Time "mo:base/Time";
@@ -110,6 +111,12 @@ shared(msg) actor class Marketplace() = self {
         let tokenInfo: Dip721.TokenInfoExt =
         switch(tokenInfoRes) {
             case(#Ok(tokenInfo)) {
+                switch(tokenInfo.metadata){
+                    case(null){
+                        return #Err(#unauthorized);
+                    };
+                    case(_){};
+                };
                 tokenInfo;
             };
             case(_) {
@@ -156,13 +163,38 @@ shared(msg) actor class Marketplace() = self {
                 if(Principal.notEqual(nftOwner, Principal.fromActor(self))) {
                     return #Err(#unauthorized);
                 };
-                if(Principal.notEqual(caller, l.owner)) { //TODO, 注意还要保证同一个合约地址的nft id 的listing对象只能存储一份
+                //TODO, 注意还要保证同一个合约地址的nft id 的listing对象只能存储一份
+                if(Principal.notEqual(caller, l.owner)) { 
                     return #Err(#unauthorized);
                 };
                 //mint wNft for caller
                 let sharingCanister: Sharing.NFToken = actor(sharingCanisterId);
-                sharingCanister.mint(caller, )
-                return #Ok(cmd.id);//temp
+
+                let TokenMetadata = switch(await nftCansiter.getTokenInfo(l.nftId)){
+                    case(#Ok(tokenInfo)) { 
+                        switch(tokenInfo.metadata) {
+                            case(?metadata){
+
+                            };
+                            case(_){
+                                Prelude.unreachable();//
+                            };
+                        }
+                    };
+                    case(_) {
+                        return #Err(#notFound);
+                    };
+                };
+                let tokenType: Text = "wNft";
+
+                let wTokenMetadata = {
+
+                    filetype = tokenInfo.metadata.filetype;
+                    attributes : [tokenType];
+                    location = tokenInfo.location;
+                };
+                sharingCanister.mint(caller, ?wTokenMetadata);
+                return #Ok(cmd.id);
             };
             case (null) {
                 return #Err(#notFound);
