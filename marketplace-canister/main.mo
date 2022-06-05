@@ -6,11 +6,12 @@ import Result "mo:base/Result";
 import Time "mo:base/Time";
 
 import Account "./Account/Account";
-import Dip721 "../dip721.did";
+import Dip721 "../marketplace-canister/canisters/dip721.did";
 import LendDomain "lend/LendDomain";
 import LendRepositories "lend/LendRepositories";
 import ListingDomain "listing/ListingDomain";
 import ListingRepositories "listing/ListingRepositories";
+import Sharing "../marketplace-canister/canisters/sharing.did";
 import TokenDomain "nft/TokenDomain";
 import Types "base/Types";
 import UserDomain "user/UserDomain";
@@ -18,7 +19,8 @@ import UserRepositories "user/UserRepositories";
 import Voice "./voice/Voice";
 
 shared(msg) actor class Marketplace() = self {
-
+    //TODO, init parameter
+    let sharingCanisterId = "rno2w-sqaaa-aaaaa-aaacq-cai";
     public type Result<X, Y> = Types.Result<X, Y>;
 
     public type UserProfile = UserDomain.UserProfile;
@@ -114,7 +116,9 @@ shared(msg) actor class Marketplace() = self {
                 return #Err(#notFound);
             }
         };
-        
+        if(Principal.notEqual(caller, tokenInfo.owner)) {
+            return #Err(#unauthorized);
+        };
         let voiceId = getIdAndIncrementOne();
         let voice: Voice.Voice = {
             id = voiceId;
@@ -133,35 +137,38 @@ shared(msg) actor class Marketplace() = self {
     // Notice: 前端把第三方 nft 平台上这个nft的转为 marketplace canister 后调用些方法
     // 需要验证对应的NFT是否属于 marketplace canister
     // TODO 到我方的衍生合约上铸造一个 wNft, 并返回 wNFT id , 供用户赎回使用
-    // public shared(msg) func listingNFT(cmd: ListingIdCommand) : async Result<Nat64, Error> {
-    //     let caller = msg.caller;
-    //     let nftCansiter : Sharing.NFToken = actor(nftCansterId);
-        // let nftIds: [Sharing.TokenInfoExt] = await nftCansiter.getUserTokens(caller);
+    public shared(msg) func listingNFT(cmd: ListingIdCommand) : async Result<Nat64, Error> {
+        let caller = msg.caller;
+        switch (ListingRepositories.getListing(listingDB, listingRepository, cmd.id)) {
+            case (?l) {
+                
 
-        
-    //     switch (ListingRepositories.getListing(listingDB, listingRepository, cmd.id)) {
-    //         case (?l) {
-    //             func f(id: Nat64) : Bool {
-    //                 id == l.nftId
-    //             };
+                let nftCansiter : Dip721.NFToken = actor(l.canisterId);
 
-    //             switch (Array.find<Nat64>(nftIds, f)) {
-    //                 case (?_) {
-    //                     // 铸造 wNft TODO
-    //                     let wNftId = getIdAndIncrementOne();
-
-    //                     return #Ok(wNftId);
-    //                 };
-    //                 case (null) {
-    //                     return #Err(#unauthorized);
-    //                 }
-    //             }
-    //         };
-    //         case (null) {
-    //             return #Err(#notFound);
-    //         }
-    //     }
-    //    };
+                let nftOwner : Principal = switch(await nftCansiter.ownerOf(l.nftId)) {
+                    case (#Ok(owner)) {
+                        owner;
+                    };
+                    case (_) {
+                        return #Err(#notFound);
+                    };
+                };
+                if(Principal.notEqual(nftOwner, Principal.fromActor(self))) {
+                    return #Err(#unauthorized);
+                };
+                if(Principal.notEqual(caller, l.owner)) { //TODO, 注意还要保证同一个合约地址的nft id 的listing对象只能存储一份
+                    return #Err(#unauthorized);
+                };
+                //mint wNft for caller
+                let sharingCanister: Sharing.NFToken = actor(sharingCanisterId);
+                sharingCanister.mint(caller, )
+                return #Ok(cmd.id);//temp
+            };
+            case (null) {
+                return #Err(#notFound);
+            }
+        }
+    };
 
     /// 下回赎回 redeem nft TODO
     /// 下回时需要检查 listing 的状态，租期是否结束，
