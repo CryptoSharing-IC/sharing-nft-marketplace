@@ -69,7 +69,7 @@ module {
     #revokeAll;
   };
   public type Record = { #metadata : ?TokenMetadata__1; #user : Principal };
-  public type Result = { #ok : Principal; #err : Errors };
+  public type Result = { #Ok : Principal; #Err : Errors };
   public type Result_1 = { #Ok : UserInfoExt; #Err : Errors };
   public type Result_2 = { #Ok : TokenInfoExt; #Err : Errors };
   public type Time = Int;
