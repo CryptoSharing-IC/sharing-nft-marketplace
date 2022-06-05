@@ -1,5 +1,6 @@
 
 import Array "mo:base/Array";
+import Arrays "mo:base/Array";
 import Blob "mo:base/Blob";
 import Prelude "mo:base/Prelude";
 import Principal "mo:base/Principal";
@@ -167,14 +168,14 @@ shared(msg) actor class Marketplace() = self {
                 if(Principal.notEqual(caller, l.owner)) { 
                     return #Err(#unauthorized);
                 };
-                //mint wNft for caller
+                //mint wNft for caller, todo refactor
                 let sharingCanister: Sharing.NFToken = actor(sharingCanisterId);
 
-                let TokenMetadata = switch(await nftCansiter.getTokenInfo(l.nftId)){
+                let tokenMetadata = switch(await nftCansiter.getTokenInfo(l.nftId)){
                     case(#Ok(tokenInfo)) { 
                         switch(tokenInfo.metadata) {
                             case(?metadata){
-
+                                metadata;
                             };
                             case(_){
                                 Prelude.unreachable();//
@@ -186,14 +187,24 @@ shared(msg) actor class Marketplace() = self {
                     };
                 };
                 let tokenType: Text = "wNft";
-
-                let wTokenMetadata = {
-
-                    filetype = tokenInfo.metadata.filetype;
-                    attributes : [tokenType];
-                    location = tokenInfo.location;
+                let attribute: Sharing.Attribute = {
+                    key = "type";
+                    value = "wNFT";
                 };
-                sharingCanister.mint(caller, ?wTokenMetadata);
+            
+                let wTokenMetadata: Sharing.TokenMetadata = {
+                    filetype = tokenMetadata.filetype;
+                    attributes = Arrays.make<Sharing.Attribute>(attribute);
+                    location = tokenMetadata.location;
+                };
+                let wTokenId = switch(await sharingCanister.mint(caller, ?wTokenMetadata)){
+                    case(#Ok((wTokenId, _))){
+                        wTokenId;
+                    };
+                    case(_){
+                        return #Err(#mintFailed);
+                    };
+                };
                 return #Ok(cmd.id);
             };
             case (null) {

@@ -61,7 +61,8 @@ module {
         #unauthorized;  // 没有授权
         #unknownError;
         #listingNotEnable; // listing 不可用
-        #listingNotFound;   
+        #listingNotFound;
+        #mintFailed;   
     };
 
     public type ApiError = {
