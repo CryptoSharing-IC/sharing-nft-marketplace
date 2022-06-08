@@ -268,9 +268,10 @@ shared(msg) actor class NFToken(
 
     // public update calls
     public shared(msg) func mint(to: Principal, metadata: ?TokenMetadata): async MintResult {
-        if(msg.caller != owner_) {
-            return #Err(#Unauthorized);
-        };
+        //todo, temp
+        // if(msg.caller != owner_) {
+        //     return #Err(#Unauthorized);
+        // };
         let token: TokenInfo = {
             index = totalSupply_;
             var owner = to;
