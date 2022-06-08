@@ -108,9 +108,8 @@ shared(msg) actor class Marketplace() = self {
         let id = getIdAndIncrementOne();
 
         let nftCansiter : Dip721.NFToken = actor(cmd.canisterId); //todo, should use the third party did file.
-        let tokenInfoRes : Dip721.Result_2 = await nftCansiter.getTokenInfo(cmd.nftId);
         let tokenInfo: Dip721.TokenInfoExt =
-        switch(tokenInfoRes) {
+        switch(await nftCansiter.getTokenInfo(cmd.nftId)) {
             case(#Ok(tokenInfo)) {
                 switch(tokenInfo.metadata){
                     case(null){
