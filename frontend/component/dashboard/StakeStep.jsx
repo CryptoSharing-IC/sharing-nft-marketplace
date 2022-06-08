@@ -18,20 +18,25 @@ export default function StakeStep (props) {
     //define custom hook
     async function createNftCanisterFromPlug (canisterId, idlFactory) {
 
-        const host = "http://127.0.0.1:8000"
 
-        const whitelist = [canisterId];
-        await window?.ic?.plug?.requestConnect({
-            whitelist,
-            host
-        });
+
+
+        const connected = await window?.ic?.plug?.isConnected();
+        if (!connected) {
+            const host = "http://127.0.0.1:8000"
+            const whitelist = [canisterId];
+            await window?.ic?.plug?.requestConnect({
+                whitelist,
+                host
+            });
+        }
+
         return await window.ic.plug.createActor({
             canisterId: canisterId,
             interfaceFactory: idlFactory,
         });
     }
     async function onSubmit () {
-        //这里比较深了, 所以假设plug钱包已经连接
         setStaking(status.STAKING);
         let dip721Id = "rkp4c-7iaaa-aaaaa-aaaca-cai"
         let nftCanister = await createNftCanisterFromPlug(dip721Id, idlFactory)
