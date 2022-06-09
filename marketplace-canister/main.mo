@@ -144,7 +144,7 @@ shared(msg) actor class Marketplace() = self {
     // Notice: 前端把第三方 nft 平台上这个nft的转为 marketplace canister 后调用些方法
     // 需要验证对应的NFT是否属于 marketplace canister
     // TODO 到我方的衍生合约上铸造一个 wNft, 并返回 wNFT id , 供用户赎回使用
-    public shared(msg) func listingNFT(cmd: ListingIdCommand) : async Result<Nat64, Error> {
+    public shared(msg) func listingNFT(cmd: ListingIdCommand) : async Result<Nat, Error> {
         let caller = msg.caller;
         switch (ListingRepositories.getListing(listingDB, listingRepository, cmd.id)) {
             case (?l) {
@@ -204,7 +204,7 @@ shared(msg) actor class Marketplace() = self {
                         return #Err(#mintFailed);
                     };
                 };
-                return #Ok(cmd.id);
+                return #Ok(wTokenId);
             };
             case (null) {
                 return #Err(#notFound);
