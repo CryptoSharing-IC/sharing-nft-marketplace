@@ -2,9 +2,26 @@ import React from 'react'
 
 export default function MintStep () {
 
+    //Todo, custome define hook
+    async function createNftCanisterFromPlug (canisterId, idlFactory) {
+        const connected = await window?.ic?.plug?.isConnected();
+        if (!connected) {
+            const host = "http://127.0.0.1:8000"
+            const whitelist = [canisterId];
+            await window?.ic?.plug?.requestConnect({
+                whitelist,
+                host
+            });
+        }
+        return await window.ic.plug.createActor({
+            canisterId: canisterId,
+            interfaceFactory: idlFactory,
+        });
+    }
+
     React.useEffect(() => {
         (async () => {
-          //通知后端, nft质押完成
+            //通知后端, nft质押完成
         })()
     }, [])
 

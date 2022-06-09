@@ -3,6 +3,7 @@ import React from 'react'
 import AppContext from '../../AppContext';
 import canisterIds from "../../../.dfx/local/canister_ids.json"
 import { idlFactory } from "../../canisters/nft/dip721.did.js"
+import createCanisterFromPlug from './createCanisterFromPlug';
 
 
 export default function StakeStep (props) {
@@ -15,31 +16,11 @@ export default function StakeStep (props) {
     let [staking, setStaking] = React.useState(status.UNSTAKING);
     let { canisters } = React.useContext(AppContext);
 
-    //define custom hook
-    async function createNftCanisterFromPlug (canisterId, idlFactory) {
 
-
-
-
-        const connected = await window?.ic?.plug?.isConnected();
-        if (!connected) {
-            const host = "http://127.0.0.1:8000"
-            const whitelist = [canisterId];
-            await window?.ic?.plug?.requestConnect({
-                whitelist,
-                host
-            });
-        }
-
-        return await window.ic.plug.createActor({
-            canisterId: canisterId,
-            interfaceFactory: idlFactory,
-        });
-    }
     async function onSubmit () {
         setStaking(status.STAKING);
-        let dip721Id = "rkp4c-7iaaa-aaaaa-aaaca-cai"
-        let nftCanister = await createNftCanisterFromPlug(dip721Id, idlFactory)
+        let dip721Id = canisterIds["dip721"]["local"];
+        let nftCanister = await createCanisterFromPlug(dip721Id, idlFactory)
 
         let res = await nftCanister.transfer(Principal.fromText(canisters.marketplaceCanisterId), props.nftData.index)
         console.log("transfer nft result is : " + JSON.stringify(res))
@@ -73,7 +54,6 @@ export default function StakeStep (props) {
                             <label htmlFor="listing-step" className="btn mr-4" disabled={staking == status.STAKING ? "disabled" : ""}>取消</label>
                             <button className="btn" onClick={async () => { onSubmit() }} disabled={staking == status.STAKING ? "disabled" : ""}>质押</button>
                         </div>
-
                         <div />
                     </div>
                 </div>
