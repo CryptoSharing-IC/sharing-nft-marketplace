@@ -46,6 +46,7 @@ export default function LengingStep (props) {
         // check the result 
         console.log(reponse)
         if (reponse?.Ok) {
+            props.setListId(reponse.Ok);
             props.nextStep();
         } else {
             setShow("ERROR_RESULT")

@@ -6,6 +6,7 @@ import StakeStep from './StakeStep';
 
 export default function ListingFlow (props) {
     let [currentStep, setCurrentStep] = React.useState(1);
+    let [listId, setListId] = React.useState(-1); //init a invalid number
     let nextStep = () => {
         setCurrentStep(currentStep++ % 4 + 1)
     }
@@ -16,10 +17,10 @@ export default function ListingFlow (props) {
                 <div className="modal-box">
                     {
                         {
-                            1: <LengingStep nftData={props.nftData} nextStep={nextStep}></LengingStep>,
-                            2: <StakeStep nftData={props.nftData} nextStep={nextStep}></StakeStep>,
-                            3: <MintStep nftData={props.nftData} nextStep={nextStep}></MintStep>,
-                            4: <FinishListingStep nftData={props.nftData} nextStep={nextStep}></FinishListingStep>
+                            1: <LengingStep nftData={props.nftData} nextStep={nextStep} listId={listId} setListId={setListId}></LengingStep>,
+                            2: <StakeStep nftData={props.nftData} nextStep={nextStep} listId={listId} setListId={setListId}></StakeStep>,
+                            3: <MintStep nftData={props.nftData} nextStep={nextStep} listId={listId} setListId={setListId}></MintStep>,
+                            4: <FinishListingStep nftData={props.nftData} nextStep={nextStep} listId={listId} setListId={setListId}></FinishListingStep>
                         }[currentStep]
                     }
                 </div>
