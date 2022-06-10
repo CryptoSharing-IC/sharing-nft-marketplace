@@ -23,6 +23,7 @@ module {
         createdAt: Timestamp;
         updatedAt: Timestamp;
         metadata: TokenInfoExt;
+        voiceId: Nat64;
     };
 
     public type Property = {
@@ -41,7 +42,7 @@ module {
         properties: [Property];
     };
 
-    public func createProfile(cmd: LendCreateCommand, id: LendId, owner: Principal, now: Timestamp, metadata: Sharing.TokenInfoExt) : LendProfile {
+    public func createProfile(cmd: LendCreateCommand, id: LendId, owner: Principal, now: Timestamp, metadata: Sharing.TokenInfoExt, voiceId: Nat64) : LendProfile {
         return {
             id = id ;
             listingId = cmd.listingId; 
@@ -51,6 +52,7 @@ module {
             createdAt = now ;
             updatedAt = now ;
             metadata = metadata;
+            voiceId: voiceId;
         };
     };
 

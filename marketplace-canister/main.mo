@@ -134,6 +134,7 @@ shared(msg) actor class Marketplace() = self {
             amount = cmd.price.decimals;
             state = #unpaid;
         };
+        voiceStore.add(voice);
 
         let listingProfile = ListingDomain.createProfile(cmd, id, caller, timeNow_(), tokenInfo, voice);
         listingDB := ListingRepositories.saveListing(listingDB, listingRepository, listingProfile);
@@ -148,8 +149,6 @@ shared(msg) actor class Marketplace() = self {
         let caller = msg.caller;
         switch (ListingRepositories.getListing(listingDB, listingRepository, cmd.id)) {
             case (?l) {
-                
-
                 let nftCansiter : Dip721.NFToken = actor(l.canisterId);
 
                 let nftOwner : Principal = switch(await nftCansiter.ownerOf(l.nftId)) {
@@ -204,6 +203,22 @@ shared(msg) actor class Marketplace() = self {
                         return #Err(#mintFailed);
                     };
                 };
+
+                //todo, updte the listing object's status
+                updateListing : ListingProfile = {
+                    id = l.id;
+                    canisterId = l.canisterId;
+                    nftId = l.nftId;
+                    name = l.name;
+                    availableUtil = l.availableUtil;
+                    price = l.price;
+                    owner = l.owner;
+                    status = #Enable;
+                    createdAt = l.createdAt;
+                    updatedAt = l.updatedAt;
+                    voice = l.voice;
+                };
+                ListingRepositories.updateListing(listingDB, listingRepository,updateListing );
                 return #Ok(wTokenId);
             };
             case (null) {
@@ -235,30 +250,43 @@ shared(msg) actor class Marketplace() = self {
         }, ListingDomain.listingOrderUpdateTimeDesc)
     };
 
-    /// 预租入 Lend 流程，先记录租入信息，例如哪个已经上架的 nft等
-    // public shared(msg) func preLendNFT(cmd: LendCreateCommand) : async Result<Nat64, Error> {
-    //     let caller = msg.caller;
-    //     let listingId = cmd.listingId;
+    // 租入 Lend 流程，先记录租入信息，例如哪个已经上架的 nft等
+    public shared(msg) func preLendNFT(cmd: LendCreateCommand) : async Result<Voice.Voice, Error> {
+        let caller = msg.caller;
+        let listingId = cmd.listingId;
 
-    //     switch (ListingRepositories.getListing(listingDB, listingRepository, listingId)) {
-    //         case (?listing) {
-    //             if (listing.status != #Enable) {
-    //                 return #Err(#listingNotEnable);
-    //             };
+        switch (ListingRepositories.getListing(listingDB, listingRepository, listingId)) {
+            case (?listing) {
+                if (listing.status != #Enable) {
+                    return #Err(#listingNotEnable);
+                };
+                if ((listing.status == #Lock) && ((timeNow_() - listing.updatedAt) < 30 * 60)) {
+                    return #Err(#listingLocked); //注意最多只能锁定30分钟
+                };
+                
+                
+                //生成付款发票
+                let voiceId = getIdAndIncrementOne();
+                let voice: Voice.Voice = {
+                    id = voiceId;
+                    listingId = id;
+                    accountIdentifier = Account.accountIdentifier(Principal.fromActor(self), Blob.fromArray(Account.beBytes64(voiceId)));
+                    amount = cmd.price.decimals;
+                    state = #unpaid;
+                    payer = caller;
+                };
+                voiceStore.add(voice);
 
-    //             let lendId = getIdAndIncrementOne();
-    //             let now = timeNow_();
-    //             let metadata = listing.metadata;
-    //             let lendOrder = LendDomain.createProfile(cmd, lendId, caller, now, metadata);
-
-    //             lendDB := LendRepositories.saveLend(lendDB, lendRepository, lendOrder);
-
-    //             #Ok(lendId);
-
-    //         };
-    //         case (null) #Err(#listingNotFound);
-    //     }
-    // };
+                let lendId = getIdAndIncrementOne();
+                let now = timeNow_();
+                let metadata = listing.metadata;
+                let lendOrder = LendDomain.createProfile(cmd, lendId, caller, now, metadata, voiceId);
+                lendDB := LendRepositories.saveLend(lendDB, lendRepository, lendOrder);
+                #Ok(voice);
+            };
+            case (null) #Err(#listingNotFound);
+        }
+    };
 
     /// 租入 Lend nft
     /// 校验支付信息，成功后 mint nft 并返回 TODO
