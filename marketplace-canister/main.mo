@@ -217,8 +217,9 @@ shared(msg) actor class Marketplace() = self {
                     createdAt = l.createdAt;
                     updatedAt = l.updatedAt;
                     voice = l.voice;
+                    wTokenId = wTokenId;
                 };
-                ListingRepositories.updateListing(listingDB, listingRepository,updateListing );
+                ListingRepositories.updateListing(listingDB, listingRepository, updateListing);
                 return #Ok(wTokenId);
             };
             case (null) {
@@ -231,7 +232,41 @@ shared(msg) actor class Marketplace() = self {
     /// 下回时需要检查 listing 的状态，租期是否结束，
     /// 如果可以赎回，再申请注销 wnft，注释成功后，前端再向 wnft 的 owner 转账 ICP
     public shared(msg) func redeem(cmd: ListingIdCommand) : async Result<Nat64, Error> {
-        #Err(#unauthorized)
+        let caller = msg.caller;
+        listId = cmd.id;
+        
+        switch(ListingRepositories.getListing(listingDB, listingRepository, cmd.id)) {
+            case(?l) {
+                //权限检查
+                let sharingCanister: Sharing.NFToken = actor(sharingCanisterId);
+                Principal wTokenOwner = switch(await sharingCanister.ownerOf(l.wTokenId)) {
+                    case(#Ok(owner)){
+                        owner;
+                    };
+                    case(_){
+                        return #Err(#unauthorized);
+                    };
+                };
+                if(caller != wTokenOwner) {
+                    return #Err(#unauthorized);
+                }
+                //todo 根据listingId遍历所有相关联的lenddomain 确定没有一个正在生效的租赁, 找到一个生效德就返回错误
+                {};
+                // 进入赎回流程 
+                //1. 销毁wToken 
+                sharingCanister.burn(l.wTokenId);
+                //2 返还原始nft
+                let nftCansiter: Dip721.NFToken = actor(nftCansterId);
+                switch(await nftCansiter.transfer(caller, l.nftId)){
+                    case(){};
+                    case(){};
+                };
+                //3.结束
+            };
+            case(null) {
+                return #notFound;
+            }; 
+        };
     };
 
     /// 验证赎回退款，校验成功修改 ListingProfile 的状态 TODO
@@ -251,7 +286,7 @@ shared(msg) actor class Marketplace() = self {
     };
 
     // 租入 Lend 流程，先记录租入信息，例如哪个已经上架的 nft等
-    public shared(msg) func preLendNFT(cmd: LendCreateCommand) : async Result<Voice.Voice, Error> {
+    public shared(msg) func preLendNFT(cmd: LendCreateCommand) : async Result<LendDomain.LendProfile, Error> {
         let caller = msg.caller;
         let listingId = cmd.listingId;
 
@@ -263,8 +298,7 @@ shared(msg) actor class Marketplace() = self {
                 if ((listing.status == #Lock) && ((timeNow_() - listing.updatedAt) < 30 * 60)) {
                     return #Err(#listingLocked); //注意最多只能锁定30分钟
                 };
-                
-                
+             
                 //生成付款发票
                 let voiceId = getIdAndIncrementOne();
                 let voice: Voice.Voice = {
@@ -282,7 +316,7 @@ shared(msg) actor class Marketplace() = self {
                 let metadata = listing.metadata;
                 let lendOrder = LendDomain.createProfile(cmd, lendId, caller, now, metadata, voiceId);
                 lendDB := LendRepositories.saveLend(lendDB, lendRepository, lendOrder);
-                #Ok(voice);
+                #Ok(lendOrder);
             };
             case (null) #Err(#listingNotFound);
         }
@@ -291,7 +325,14 @@ shared(msg) actor class Marketplace() = self {
     /// 租入 Lend nft
     /// 校验支付信息，成功后 mint nft 并返回 TODO
     public shared(msg) func validLend(cmd: LendIdCommand) : async Result<Dip721.TokenInfoExt, Error> {
-        #Err(#unauthorized)
+        let caller = msg.caller;
+        let lendId = cmd.id;
+
+        switch(LendRepositories.getLend(lendDB, lendRepository, lendId)) {
+            case() {};
+            case() {};
+     
+        };
     };
 
     

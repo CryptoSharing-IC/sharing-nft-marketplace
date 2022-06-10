@@ -63,6 +63,7 @@ module {
         #listingNotEnable; // listing 不可用
         #listingNotFound;
         #mintFailed;   
+        #listingLocked;
     };
 
     public type ApiError = {

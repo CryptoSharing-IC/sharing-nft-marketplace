@@ -29,6 +29,7 @@ module {
         createdAt: Timestamp;
         updatedAt: Timestamp;
         //metadata: TokenInfoExt;
+        wTokenId: ?Nat;
         voice: Voice.Voice;
     };
 
