@@ -23,6 +23,8 @@ import Voice "./voice/Voice";
 shared(msg) actor class Marketplace() = self {
     //TODO, init parameter
     let sharingCanisterId = "rno2w-sqaaa-aaaaa-aaacq-cai";
+    let sharingCanister: Sharing.NFToken = actor(sharingCanisterId);
+
     public type Result<X, Y> = Types.Result<X, Y>;
 
     public type UserProfile = UserDomain.UserProfile;
@@ -107,7 +109,7 @@ shared(msg) actor class Marketplace() = self {
         let caller = msg.caller;
         let id = getIdAndIncrementOne();
 
-        let nftCansiter : Dip721.NFToken = actor(cmd.canisterId); //todo, should use the third party did file.
+        let nftCansiter : Dip721.NFToken = actor(cmd.canisterId); 
         let tokenInfo: Dip721.TokenInfoExt =
         switch(await nftCansiter.getTokenInfo(cmd.nftId)) {
             case(#Ok(tokenInfo)) {
@@ -135,7 +137,7 @@ shared(msg) actor class Marketplace() = self {
             state = #unpaid;
         };
 
-        let listingProfile = ListingDomain.createProfile(cmd, id, caller, timeNow_(), tokenInfo, voice);
+        let listingProfile = ListingDomain.createProfile(cmd, id, caller, timeNow_(), tokenInfo, voice, null);
         listingDB := ListingRepositories.saveListing(listingDB, listingRepository, listingProfile);
         #Ok(id)
     };
@@ -168,7 +170,7 @@ shared(msg) actor class Marketplace() = self {
                     return #Err(#unauthorized);
                 };
                 //mint wNft for caller, todo refactor
-                let sharingCanister: Sharing.NFToken = actor(sharingCanisterId);
+                
 
                 let tokenMetadata = switch(await nftCansiter.getTokenInfo(l.nftId)){
                     case(#Ok(tokenInfo)) { 
@@ -204,6 +206,8 @@ shared(msg) actor class Marketplace() = self {
                         return #Err(#mintFailed);
                     };
                 };
+                let listingProfile = ListingDomain.updateRedeemNftId(l, ?wTokenId);
+                listingDB := ListingRepositories.saveListing(listingDB, listingRepository, listingProfile);
                 return #Ok(wTokenId);
             };
             case (null) {
@@ -216,7 +220,53 @@ shared(msg) actor class Marketplace() = self {
     /// 下回时需要检查 listing 的状态，租期是否结束，
     /// 如果可以赎回，再申请注销 wnft，注释成功后，前端再向 wnft 的 owner 转账 ICP
     public shared(msg) func redeem(cmd: ListingIdCommand) : async Result<Nat64, Error> {
-        #Err(#unauthorized)
+        let caller = msg.caller;
+        switch (ListingRepositories.getListing(listingDB, listingRepository, cmd.id)) {
+            case (?l) {
+                let redeemNftId = switch(l.redeemNftId){
+                    case(?redeemNftId) {redeemNftId};
+                    case(null) {
+                        return #Err(#notFound);
+                    };
+                };
+                let redeemOwner = switch(await sharingCanister.ownerOf(redeemNftId)){
+                    case(#Ok(owner)){
+                        if(caller != owner) {
+                            return #Err(#unauthorized);
+                        };
+                        owner
+                    };
+                    case(_){return #Err(#notFound)};
+                };
+                if(isRenting(l.nftId)) {
+                    return #Err(#renting);
+                };
+                switch(await sharingCanister.burn(redeemNftId)) {
+                    case(#Ok(txId)){};
+                    case(_){
+                        return #Err(#burnFailed);
+                    };
+                };
+                let nftCansiter : Dip721.NFToken = actor(l.canisterId); 
+                switch(await nftCansiter.transfer(redeemOwner, l.nftId)){
+                    case(#Ok(txId)){
+                        return #Ok(l.id);
+                    };
+                    case(_){
+                        return #Err(#transferFailed)
+                    };
+                };
+
+            };
+            case (null) {
+                return #Err(#notFound);
+            };
+        };
+    };
+    
+    //todo 
+    func isRenting(nftId: Nat): Bool{
+        return true;
     };
 
     /// 验证赎回退款，校验成功修改 ListingProfile 的状态 TODO

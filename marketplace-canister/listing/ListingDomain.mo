@@ -28,8 +28,7 @@ module {
         status: ListingStatus;
         createdAt: Timestamp;
         updatedAt: Timestamp;
-        //metadata: TokenInfoExt;
-        voice: Voice.Voice;
+        redeemNftId: ?Nat;
     };
 
     public type NFTPropertyKey = {
@@ -60,7 +59,7 @@ module {
         //metadata: Sharing.TokenInfoExt;
     };
 
-    public func createProfile(cmd: ListingCreateCommand, id: ListingId, owner: Principal, now: Timestamp, metadata: Sharing.TokenInfoExt, voice: Voice.Voice) : ListingProfile {
+    public func createProfile(cmd: ListingCreateCommand, id: ListingId, owner: Principal, now: Timestamp, metadata: Sharing.TokenInfoExt, voice: Voice.Voice, redeemNftId: ?Nat) : ListingProfile {
 
         return {
             id = id ;
@@ -76,6 +75,7 @@ module {
             updatedAt = now ;
             //metadata = metadata;
             voice = voice;
+            redeemNftId = redeemNftId;
         };
     };
 
@@ -92,7 +92,7 @@ module {
         metadata: Sharing.TokenInfoExt;
     };
 
-    public func updateListing(cmd: ListingEditCommand, profile: ListingProfile, now: Timestamp, voice: Voice.Voice) : ListingProfile {
+    public func updateListing(cmd: ListingEditCommand, profile: ListingProfile, now: Timestamp, redeemNftId: Nat) : ListingProfile {
         assert(cmd.id == profile.id);
         {
             id = profile.id ;
@@ -106,8 +106,25 @@ module {
             createdAt = profile.createdAt ;
             updatedAt = now ;
             metadata = cmd.metadata;
-            voice = voice;
+            redeemNftId = ?redeemNftId;
         }
+    };
+
+    public func updateRedeemNftId(l: ListingProfile, redeemNftId: ?Nat) : ListingProfile{
+        return {
+            id = l.id ;
+            canisterId = l.canisterId ;
+            nftId = l.nftId ;
+            name = l.name;
+            availableUtil = l.availableUtil ;
+            price = l.price ;
+            owner = l.owner ;
+            status = l.status;
+            createdAt = l.createdAt ;
+            updatedAt = l.updatedAt;
+            redeemNftId = redeemNftId;
+        }
+
     };
 
     public type ListingPageQuery = {

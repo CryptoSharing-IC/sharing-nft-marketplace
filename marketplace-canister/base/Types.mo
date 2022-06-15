@@ -63,6 +63,9 @@ module {
         #listingNotEnable; // listing 不可用
         #listingNotFound;
         #mintFailed;   
+        #renting; 
+        #burnFailed;
+        #transferFailed;
     };
 
     public type ApiError = {
