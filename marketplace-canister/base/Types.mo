@@ -66,6 +66,7 @@ module {
         #renting; 
         #burnFailed;
         #transferFailed;
+        #listingLocked;
     };
 
     public type ApiError = {

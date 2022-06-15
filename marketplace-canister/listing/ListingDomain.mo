@@ -29,6 +29,8 @@ module {
         createdAt: Timestamp;
         updatedAt: Timestamp;
         redeemNftId: ?Nat;
+        wTokenId: ?Nat;
+        voice: Voice.Voice;
     };
 
     public type NFTPropertyKey = {
@@ -45,6 +47,8 @@ module {
     public type ListingStatus = {
         #Pending;   // 待上架
         #Enable;    // 已上架
+        #Lock       // 付款前先锁定
+        #Unlock     // 可以进入付款流程
         #Disable;   // 已下架
         #Redeemed;  // 已赎回
     };

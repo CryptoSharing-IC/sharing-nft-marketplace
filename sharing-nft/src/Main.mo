@@ -307,6 +307,7 @@ shared(msg) actor class NFToken(
         return #Ok((startIndex, txs.size() - arr.size()));
     };
 
+   //todo, 给marketplace特权，
     public shared(msg) func burn(tokenId: Nat): async TxReceipt {
         if(_exists(tokenId) == false) {
             return #Err(#TokenNotExist)
