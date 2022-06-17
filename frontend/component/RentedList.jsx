@@ -1,7 +1,9 @@
 import React from 'react'
 
-export default function RentedList() {
+export default function RentedList () {
+
   return (
-    <div>RentedList</div>
-  )
+    <div className="flex justify-center bg-gray-100 px-6 ">
+      <List className="grow" status="redeemed"></List>
+    </div>)
 }

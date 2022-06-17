@@ -267,11 +267,12 @@ shared(msg) actor class Marketplace() = self {
     };
     
     func validLend(lend: LendDomain.LendProfile) : Bool{
-        timeNow_() > lend.start and timeNow_() < lend.end;
-     };
+        timeNow_() < lend.end 
+        and lend.status == #Enable
+    };
 
     /// 分页查询 上架 nft 
-    public query(msg) func pageListings(q: ListingPageQuery) : async ListingPage {
+    public query(msg)  func pageListings(q: ListingPageQuery) : async ListingPage {
         let pageSize = q.pageSize;
         let pageNum = q.pageNum;
         let status = q.status;
@@ -302,7 +303,7 @@ shared(msg) actor class Marketplace() = self {
                 if(not rentTimeAvailable(listing.id, cmd.start, cmd.end)) {
                     return #Err(#understock);
                 };
-
+               
                 let lendId = getIdAndIncrementOne();
                 let now = timeNow_();
                

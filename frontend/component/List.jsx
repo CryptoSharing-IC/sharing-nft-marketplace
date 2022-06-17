@@ -1,5 +1,7 @@
 import React from "react"
 import getMarketplaceCanister from "../utils/getMarketplactCanister.js";
+import getNftCanister from "../utils/getNftCanister"
+import { marketplace } from "canisters/marketplace";
 
 export default function List (props) {
   let [queryData, setQueryData] = React.useState({})
@@ -7,8 +9,15 @@ export default function List (props) {
   let [nfts, setNfts] = React.useState([])
 
   React.useEffect(() => {
-    (() => {
-      let marketplace = await getMarketplaceCanister();
+    (async () => {
+      //let marketplace = await getNftCanister();
+      console.log("hello")
+      let pageData = await marketplace.pageListings({
+        pageSize: 10,
+        pageNum: 1,
+        status: props.status
+      });
+      console.log("listing page data is: " + pageData);
 
     })()
 

@@ -10,7 +10,7 @@ export default async function createCanisterFromPlug (canisterId, idlFactory) {
             host
         });
     }
-
+    console.log("id " + canisterId + "idl is: " + idlFactory)
     return await window.ic.plug.createActor({
         canisterId: canisterId,
         interfaceFactory: idlFactory,

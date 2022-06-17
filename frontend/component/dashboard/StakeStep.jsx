@@ -3,7 +3,7 @@ import React from 'react'
 import AppContext from '../../AppContext';
 import canisterIds from "../../../.dfx/local/canister_ids.json"
 import { idlFactory } from "../../canisters/nft/dip721.did.js"
-import createCanisterFromPlug from './createCanisterFromPlug';
+import createCanisterFromPlug from '../../utils/createCanisterFromPlug';
 
 
 export default function StakeStep (props) {
