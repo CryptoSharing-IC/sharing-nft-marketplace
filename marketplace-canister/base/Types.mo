@@ -67,6 +67,8 @@ module {
         #burnFailed;
         #transferFailed;
         #listingLocked;
+        #parameterErr;
+        #understock;
     };
 
     public type ApiError = {

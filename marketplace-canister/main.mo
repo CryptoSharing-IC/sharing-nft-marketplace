@@ -6,6 +6,9 @@ import Prelude "mo:base/Prelude";
 import Principal "mo:base/Principal";
 import Result "mo:base/Result";
 import Time "mo:base/Time";
+import Nat "mo:base/Nat";
+import Nat64 "mo:base/Nat64";
+import Int "mo:base/Int";
 
 import Account "./Account/Account";
 import Dip721 "../marketplace-canister/canisters/dip721.did";
@@ -19,12 +22,15 @@ import Types "base/Types";
 import UserDomain "user/UserDomain";
 import UserRepositories "user/UserRepositories";
 import Voice "./voice/Voice";
+import Ledger "./ledger/ledger.public.did";
 
 shared(msg) actor class Marketplace() = self {
     //TODO, init parameter
     let sharingCanisterId = "rno2w-sqaaa-aaaaa-aaacq-cai";
     let sharingCanister: Sharing.NFToken = actor(sharingCanisterId);
 
+    let ledgerCanisterId = "qaa6y-5yaaa-aaaaa-aaafa-cai";
+    let ledgerCanister: Ledger.Self = actor(ledgerCanisterId);
     public type Result<X, Y> = Types.Result<X, Y>;
 
     public type UserProfile = UserDomain.UserProfile;
@@ -128,17 +134,8 @@ shared(msg) actor class Marketplace() = self {
         if(Principal.notEqual(caller, tokenInfo.owner)) {
             return #Err(#unauthorized);
         };
-        let voiceId = getIdAndIncrementOne();
-        let voice: Voice.Voice = {
-            id = voiceId;
-            listingId = id;
-            accountIdentifier = Account.accountIdentifier(Principal.fromActor(self), Blob.fromArray(Account.beBytes64(voiceId)));
-            amount = cmd.price.decimals;
-            state = #unpaid;
-        };
-        voiceStore.add(voice);
 
-        let listingProfile = ListingDomain.createProfile(cmd, id, caller, timeNow_(), tokenInfo, voice, null);
+        let listingProfile = ListingDomain.createProfile(cmd, id, caller, timeNow_(), tokenInfo, null);
         listingDB := ListingRepositories.saveListing(listingDB, listingRepository, listingProfile);
         #Ok(id)
     };
@@ -164,7 +161,7 @@ shared(msg) actor class Marketplace() = self {
                 if(Principal.notEqual(nftOwner, Principal.fromActor(self))) {
                     return #Err(#unauthorized);
                 };
-                //TODO, 注意还要保证同一个合约地址的nft id 的listing对象只能存储一份
+                //TODO, 注意还要保证同一个合约地址的nft id 的listing对象只能存储一份, 用canisterid和nftid拼接成key
                 if(Principal.notEqual(caller, l.owner)) { 
                     return #Err(#unauthorized);
                 };
@@ -186,7 +183,7 @@ shared(msg) actor class Marketplace() = self {
                         return #Err(#notFound);
                     };
                 };
-                let tokenType: Text = "wNft";
+                
                 let attribute: Sharing.Attribute = {
                     key = "type";
                     value = "wNFT";
@@ -205,7 +202,7 @@ shared(msg) actor class Marketplace() = self {
                         return #Err(#mintFailed);
                     };
                 };
-                let listingProfile = ListingDomain.updateRedeemNftId(l, ?wTokenId);
+                let listingProfile: ListingDomain.ListingProfile = ListingDomain.updateRedeemNftId(l, ?wTokenId);
                 listingDB := ListingRepositories.saveListing(listingDB, listingRepository, listingProfile);
                 return #Ok(wTokenId);
             };
@@ -237,7 +234,7 @@ shared(msg) actor class Marketplace() = self {
                     };
                     case(_){return #Err(#notFound)};
                 };
-                if(isRenting(l.nftId)) {
+                if(isRenting(l.id)) {
                     return #Err(#renting);
                 };
                 switch(await sharingCanister.burn(redeemNftId)) {
@@ -263,15 +260,15 @@ shared(msg) actor class Marketplace() = self {
         };
     };
     
-    //todo 
-    func isRenting(nftId: Nat): Bool{
-        return true;
+    func isRenting(listId: Nat64): Bool{
+        LendRepositories.some(lendDB, lendRepository, func (k: LendDomain.LendId, v: LendDomain.LendProfile) {
+            v.listingId == listId and validLend(v);
+        });
     };
-
-    /// 验证赎回退款，校验成功修改 ListingProfile 的状态 TODO
-    public shared(msg) func validRedeem(cmd: ListingIdCommand) : async Result<Bool, Error> {
-        #Err(#unauthorized)
-    };
+    
+    func validLend(lend: LendDomain.LendProfile) : Bool{
+        timeNow_() > lend.start and timeNow_() < lend.end;
+     };
 
     /// 分页查询 上架 nft 
     public query(msg) func pageListings(q: ListingPageQuery) : async ListingPage {
@@ -294,43 +291,162 @@ shared(msg) actor class Marketplace() = self {
                 if (listing.status != #Enable) {
                     return #Err(#listingNotEnable);
                 };
-                if ((listing.status == #Lock) and ((timeNow_() - listing.updatedAt) < 30 * 60)) {
-                    return #Err(#listingLocked); //注意最多只能锁定30分钟
+                if((cmd.end - cmd.start)/1000000000/3600 < 1){
+                    return #Err(#parameterErr);
                 };
-             
-                //生成付款发票
-                let voiceId = getIdAndIncrementOne();
-                let voice: Voice.Voice = {
-                    id = voiceId;
-                    listingId = id;
-                    accountIdentifier = Account.accountIdentifier(Principal.fromActor(self), Blob.fromArray(Account.beBytes64(voiceId)));
-                    amount = cmd.price.decimals;
-                    state = #unpaid;
-                    payer = caller;
+
+                if(cmd.end > listing.availableUtil) {
+                    return #Err(#parameterErr);
                 };
-                voiceStore.add(voice);
+                ///遍历所有的lend对象确保 资源可用 租赁时间不重叠
+                if(not rentTimeAvailable(listing.id, cmd.start, cmd.end)) {
+                    return #Err(#understock);
+                };
 
                 let lendId = getIdAndIncrementOne();
                 let now = timeNow_();
-                let metadata = listing.metadata;
-                let lendOrder = LendDomain.createProfile(cmd, lendId, caller, now, metadata, voiceId);
+               
+                let accountIdentifier = Account.accountIdentifier(Principal.fromActor(self), Blob.fromArray(Account.beBytes64(lendId)));
+                
+                //以整数小时计费
+                let amount: Nat64 = Nat64.fromNat((cmd.end - cmd.start) * listing.price.decimals /1000000000/3600); 
+                let lendOrder = LendDomain.createProfile(listing.id, lendId, caller, listing.owner ,now, cmd.start, cmd.end, accountIdentifier, amount);
                 lendDB := LendRepositories.saveLend(lendDB, lendRepository, lendOrder);
                 #Ok(lendOrder);
             };
             case (null) #Err(#listingNotFound);
         }
     };
+    
+    // public query inventory(): []{
+
+    // };
+
+    func rentTimeAvailable(listId: Nat64, start: Nat, end: Nat) : Bool{ 
+        let lendList: [LendDomain.LendProfile] = LendRepositories.getLendByListId(lendDB, lendRepository, listId);
+        for(l in lendList.vals()) {
+            if(isOverlap(start, end, l.start, l.end)){
+                return false;
+            };
+        };
+        return true;
+    };
+
+    func isOverlap(a1: Nat, a2: Nat, b1: Nat, b2: Nat): Bool{
+        let begin: Nat = Nat.max(a1, b1);
+        let end : Nat = Nat.min(a2, b2);
+        end - begin >= 0;
+    };
 
     /// 租入 Lend nft
     /// 校验支付信息，成功后 mint nft 并返回 TODO
-    public shared(msg) func validLend(cmd: LendIdCommand) : async Result<Dip721.TokenInfoExt, Error> {
+    public shared(msg) func notify(cmd: LendIdCommand) : async Result<Nat64, Error> {
         let caller = msg.caller;
         let lendId = cmd.id;
 
         switch(LendRepositories.getLend(lendDB, lendRepository, lendId)) {
-            case() {};
-            case() {};
-     
+            case(?lend) {
+                let subaccountBalance : {e8s: Nat64} = await ledgerCanister.account_balance({account:Blob = lend.accountIdentifier});
+                if(subaccountBalance.e8s != lend.amount) {
+                    return #Err(#parameterErr)
+                };
+                    //pay success 
+                    //0. 把钱转回主账户 
+                    
+                    let transferArgs: Ledger.TransferArgs = {
+                        to = Account.accountIdentifier(Principal.fromActor(self), Account.defaultSubaccount());
+                        fee = {e8s=10000};
+                        memo = lend.id;
+                        from_subaccount = ?lend.accountIdentifier;
+                        created_at_time = ?{timestamp_nanos = Nat64.fromNat(Int.abs(timeNow_()))};   
+                        amount = {e8s = subaccountBalance.e8s};
+                    };
+
+                    type TransferError = {
+                        #TxTooOld : { allowed_window_nanos : Nat64 };
+                        #BadFee : { expected_fee : Ledger.Tokens };
+                        #TxDuplicate : { duplicate_of : BlockIndex };
+                        #TxCreatedInFuture;
+                        #InsufficientFunds : { balance : Ledger.Tokens };
+                    };
+                    type BlockIndex = Nat64;
+                    let res:{ #Ok : BlockIndex; #Err : TransferError } = await ledgerCanister.transfer(transferArgs);
+                    switch(res){
+                        case(#Ok(blockIndex)){
+
+                        };
+                        case(_){
+                            return #Err(#transferFailed);
+                        };
+                    };
+                    //1. 给买家铸造使用权nft, 
+                    ///////////////
+                    let l: ListingDomain.ListingProfile = switch (ListingRepositories.getListing(listingDB, listingRepository, lend.listingId)) {
+                        case (?listing) {
+                            listing;
+                        };
+                        case (null) {
+                            return #Err(#listingNotFound);
+                        }
+                    };
+                   let nftCansiter : Dip721.NFToken = actor(l.canisterId); 
+                   let tokenMetadata = switch(await nftCansiter.getTokenInfo(l.nftId)){
+                        case(#Ok(tokenInfo)) { 
+                            switch(tokenInfo.metadata) {
+                                case(?metadata){
+                                    metadata;
+                                };
+                                case(_){
+                                    Prelude.unreachable();//
+                               };
+                            }
+                        };
+                        case(_) {
+                            return #Err(#notFound);
+                        };
+                    };
+                    let attribute: Sharing.Attribute = {
+                        key = "type";
+                        value = "uNFT";
+                    };
+                    let wTokenMetadata: Sharing.TokenMetadata = {
+                        filetype = tokenMetadata.filetype;
+                        attributes = Arrays.make<Sharing.Attribute>(attribute);
+                        location = tokenMetadata.location;
+                    };
+                    let uTokenId = switch(await sharingCanister.mint(caller, ?wTokenMetadata)){
+                        case(#Ok((wTokenId, _))){
+                            wTokenId;
+                        };
+                        case(_){
+                            return #Err(#mintFailed);
+                        };
+                    };
+                    
+                    //2. 给拥有者分成 
+               
+                    let transferRentArgs: Ledger.TransferArgs = {
+                        to = Account.accountIdentifier(lend.nftOwner, Account.defaultSubaccount());
+                        fee = {e8s=10000};
+                        memo = lend.id;
+                        from_subaccount = null;
+                        created_at_time = ?{timestamp_nanos = Nat64.fromNat(Int.abs(timeNow_()))};
+                        amount = {e8s = lend.amount * 9 / 10};
+                    };
+                    let transferRentRes:{ #Ok : BlockIndex; #Err : TransferError } = await ledgerCanister.transfer(transferRentArgs);
+                    switch(transferRentRes){
+                        case(#Ok(blockIndex)){
+                        };
+                        case(_){
+                            return #Err(#transferFailed);
+                        };
+                    };
+                    return #Ok(lend.id);
+                
+            };
+            case(null) {
+                return #Err(#notFound);
+            };
         };
     };
 

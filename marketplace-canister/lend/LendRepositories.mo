@@ -80,5 +80,18 @@ module {
     public func allLendIds(lendDB: LendDB) : [LendId] {
         Trie.toArray<LendId, LendProfile, LendId>(lendDB, func (k: LendId, _) : LendId { k })
     };
+   
+    /// 获取同一个listingid的所有lend对象
+    public func getLendByListId(db: LendDB, repository: LendRepository, listId: Nat64) : [LendProfile] {
+        
+        let lendTrie = repository.findBy(db, func (K: LendId, v: LendProfile): Bool {
+            v.listingId == listId
+        });
+        return Trie.toArray<LendId,LendProfile, LendProfile>(lendTrie, func (k: LendId, v: LendProfile) {v});
+    };
+    
+    public func some(db: LendDB, repository: LendRepository, f: (k: LendId, v: LendProfile) -> Bool) : Bool{
+        repository.some(db, f);
+    };
 
 }

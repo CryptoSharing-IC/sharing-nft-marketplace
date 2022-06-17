@@ -1,5 +1,5 @@
 import React from 'react'
-import createCanisterFromPlug from './createCanisterFromPlug'
+import createCanisterFromPlug from '../../utils/createCanisterFromPlug'
 import canisterIds from "../../../.dfx/local/canister_ids.json"
 import { idlFactory } from "../../canisters/marketplace/marketplace.did.js"
 

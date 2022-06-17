@@ -29,8 +29,6 @@ module {
         createdAt: Timestamp;
         updatedAt: Timestamp;
         redeemNftId: ?Nat;
-        wTokenId: ?Nat;
-        voice: Voice.Voice;
     };
 
     public type NFTPropertyKey = {
@@ -41,14 +39,12 @@ module {
 
     public type PriceUnit = {
         symbol: Text;
-        decimals: Nat64;
+        decimals: Nat;
     };
 
     public type ListingStatus = {
         #Pending;   // 待上架
         #Enable;    // 已上架
-        #Lock       // 付款前先锁定
-        #Unlock     // 可以进入付款流程
         #Disable;   // 已下架
         #Redeemed;  // 已赎回
     };
@@ -63,7 +59,7 @@ module {
         //metadata: Sharing.TokenInfoExt;
     };
 
-    public func createProfile(cmd: ListingCreateCommand, id: ListingId, owner: Principal, now: Timestamp, metadata: Sharing.TokenInfoExt, voice: Voice.Voice, redeemNftId: ?Nat) : ListingProfile {
+    public func createProfile(cmd: ListingCreateCommand, id: ListingId, owner: Principal, now: Timestamp, metadata: Sharing.TokenInfoExt, redeemNftId: ?Nat) : ListingProfile {
 
         return {
             id = id ;
@@ -77,9 +73,8 @@ module {
             status = #Pending;
             createdAt = now ;
             updatedAt = now ;
-            //metadata = metadata;
-            voice = voice;
             redeemNftId = redeemNftId;
+            wTokenId = null;
         };
     };
 

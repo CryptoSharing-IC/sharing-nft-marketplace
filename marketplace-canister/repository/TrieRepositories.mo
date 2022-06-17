@@ -39,6 +39,14 @@ module {
             entities
         };
 
+        public func isEmpty(db: TrieDB<K, V>): Bool {
+            Trie.isEmpty(db);
+        };
+
+        public func some(db: TrieDB<K, V>, f: (K, V) -> Bool) : Bool {
+            Trie.some(db, f);
+        };
+
         /// 根据过滤条件统计数量，返回满足条件的记录数，否则返回0
         public func countSize(db: TrieDB<K, V>) : Nat {       
             Trie.size<K, V>(db)

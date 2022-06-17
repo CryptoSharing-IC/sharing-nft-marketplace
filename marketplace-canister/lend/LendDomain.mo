@@ -17,18 +17,15 @@ module {
     public type LendProfile = {
         id: LendId;
         listingId: Nat64;
-        properties: [Property];
         owner: Principal;
+        nftOwner: Principal;
         status: LendStatus;
         createdAt: Timestamp;
         updatedAt: Timestamp;
-        metadata: TokenInfoExt;
-        voiceId: Nat64;
-    };
-
-    public type Property = {
-        name: Text;
-        value: Text;
+        start: Nat;
+        end: Nat;
+        accountIdentifier: Blob;
+        amount: Nat64;
     };
 
     public type LendStatus = {
@@ -39,20 +36,23 @@ module {
     
     public type LendCreateCommand = {
         listingId: Nat64;
-        properties: [Property];
+        start: Nat;
+        end: Nat;
     };
 
-    public func createProfile(cmd: LendCreateCommand, id: LendId, owner: Principal, now: Timestamp, metadata: Sharing.TokenInfoExt, voiceId: Nat64) : LendProfile {
+    public func createProfile(listId: Nat64, id: LendId, owner: Principal, nftOwner: Principal, now: Timestamp, start: Nat, end: Nat, accountIdentifier: Blob, amount: Nat64) : LendProfile {
         return {
             id = id ;
-            listingId = cmd.listingId; 
-            properties = cmd.properties;
+            listingId = listId; 
             owner = owner ;
+            nftOwner = nftOwner;
             status = #Pending;
             createdAt = now ;
             updatedAt = now ;
-            metadata = metadata;
-            voiceId: voiceId;
+            start = start;
+            end = end;
+            accountIdentifier = accountIdentifier;
+            amount = amount;
         };
     };
 
