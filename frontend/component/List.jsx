@@ -1,29 +1,22 @@
 import React from "react"
-import getMarketplaceCanister from "../utils/getMarketplactCanister.js";
-import getNftCanister from "../utils/getNftCanister"
-import { marketplace } from "canisters/marketplace";
+import { marketplace } from "canisters/marketplace"
 
 export default function List (props) {
-  let [queryData, setQueryData] = React.useState({})
-
-  let [nfts, setNfts] = React.useState([])
+  BigInt.prototype.toJSON = function () { return this.toString() }
+  let [pageData, setPageData] = React.useState(null)
 
   React.useEffect(() => {
     (async () => {
-      //let marketplace = await getNftCanister();
-      console.log("hello")
+      console.log(props.status)
       let pageData = await marketplace.pageListings({
-        pageSize: 10,
-        pageNum: 1,
+        pageSize: props.pageSize || 10,
+        pageNum: props.pageNum || 1,
         status: props.status
       });
-      console.log("listing page data is: " + pageData);
+      console.log("listing page data is: " + JSON.stringify(pageData));
 
     })()
-
-
-    //setNfts((await fetch("", queryData))
-  }, [queryData])
+  }, [props.pageSize, props.pageNum])
 
   return (
     <div className="flex grow">

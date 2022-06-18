@@ -1,34 +1,41 @@
 import React from "react"
 import PlugConnect from "@psychedelic/plug-connect"
-import wallet_icon from "../assets/wallet.png"
-import { useEffect, useState, useContext } from "react"
 import shortPrincipal from "../utils/short-principal"
 import { AppContext } from "../App"
+import cansiterIds from "../../canister_ids.json"
+
+
+let whitelist = [cansiterIds["marketplace"]["ic"], cansiterIds["dip721"]["ic"], cansiterIds["sharing"]["ic"]];
+let host = "https://mainnet.dfinity.network";
 
 export default function Wallet () {
     const { connected, setConnected } = React.useContext(AppContext);
-    const { userPrincipal, setUserPrincipal } = React.useContext(AppContext);
-    const [title, setTitle] = useState("login with plug")
 
-    useEffect(async () => {
+    const [title, setTitle] = React.useState("login with plug")
+
+    React.useEffect(async () => {
         if (connected) {
+
             const principal = await window.ic.plug.agent.getPrincipal()
 
             if (principal) {
-                setUserPrincipal(principal.toText())
                 setTitle(shortPrincipal(principal.toText()))
             }
 
         } else {
-            setTitle("login with plug")
+            setTitle("login with plug");
+            setUserPrincipal("");
+            setMarketplace(null);
+            setSharing(null);
+            setDip721(null);
         }
     }, [connected])
     return connected ? (<div>{title}</div>) : (
         <PlugConnect
             dark
             title={title}
-            host="http://127.0.0.1:8000"
-            whitelist={["r7inp-6aaaa-aaaaa-aaabq-cai"]}
+            host={host}
+            whitelist={whitelist}
             onConnectCallback={() => setConnected(true)}
         />
     )

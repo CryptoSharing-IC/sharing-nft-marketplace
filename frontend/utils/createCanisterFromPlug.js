@@ -3,14 +3,13 @@ export default async function createCanisterFromPlug (canisterId, idlFactory) {
 
     const connected = await window?.ic?.plug?.isConnected();
     if (!connected) {
-        const host = "http://127.0.0.1:8000"
+        const host = "https://mainnet.dfinity.network"
         const whitelist = [canisterId];
         await window?.ic?.plug?.requestConnect({
             whitelist,
             host
         });
     }
-    console.log("id " + canisterId + "idl is: " + idlFactory)
     return await window.ic.plug.createActor({
         canisterId: canisterId,
         interfaceFactory: idlFactory,

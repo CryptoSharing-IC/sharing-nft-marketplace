@@ -1,5 +1,4 @@
 import React, { useState } from 'react'
-import { marketplace } from "canisters/marketplace"
 import { useForm } from "react-hook-form";
 import { Principal } from "@dfinity/principal";
 
