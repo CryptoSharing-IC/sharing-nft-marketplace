@@ -3,7 +3,7 @@ import React from 'react'
 import { AppContext } from "../App"
 import cansiterIds from "../../canister_ids.json"
 import { idlFactory as idlFactorySharing } from "../../.dfx/ic/canisters/sharing/sharing.did"
-export default function useSharing () {
+export default async function useSharing () {
 
     const { connected, setConnected } = React.useContext(AppContext);
     const { sharing, setSharing } = React.useContext(AppContext);

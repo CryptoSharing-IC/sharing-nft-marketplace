@@ -1,15 +1,18 @@
 import React from "react"
-import { BrowserRouter, Routes, Route } from "react-router-dom"
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { App } from "./App"
 import Lending from "./component/Lending"
 import Rented from "./component/dashboard/Rented"
-import IdleCardList from "./component/dashboard/IdleCardList"
+import { IdleCardList } from "./component/dashboard/IdleCardList"
 import Listed from "./component/dashboard/Listed"
 import RentedList from "./component/RentedList"
 
 const BaseRouter = () => (
   <BrowserRouter>
     <Routes>
+    // in v6
+      <Route path="/" element={<Navigate to="/lending" replace />} />
+
       <Route path="/" element={<App />}>
         <Route path="/lending" element={<Lending />}></Route>
         <Route path="/rented" element={<RentedList />}></Route>

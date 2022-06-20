@@ -90,4 +90,7 @@ module {
         Trie.toArray<ListingId, ListingProfile, ListingId>(listingDB, func (k: ListingId, _) : ListingId { k })
     };
 
+    public func allListing(listingDB: ListingDB) : [ListingProfile] {
+        Trie.toArray<ListingId, ListingProfile, ListingProfile>(listingDB, func (k: ListingId, v: ListingProfile) : ListingProfile {v})
+    };
 }

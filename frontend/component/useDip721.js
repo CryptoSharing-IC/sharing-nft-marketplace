@@ -2,7 +2,7 @@ import React from 'react'
 
 import { AppContext } from "../App"
 import cansiterIds from "../../canister_ids.json"
-import { idlFactory as idlFactoryDip721 } from "../../.dfx/ic/canisters/dip721/dip721.did"
+    import { idlFactory as idlFactoryDip721 } from "../../.dfx/ic/canisters/dip721/dip721.did"
 
 export default function useDip721 () {
 

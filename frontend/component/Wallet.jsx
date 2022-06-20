@@ -24,10 +24,6 @@ export default function Wallet () {
 
         } else {
             setTitle("login with plug");
-            setUserPrincipal("");
-            setMarketplace(null);
-            setSharing(null);
-            setDip721(null);
         }
     }, [connected])
     return connected ? (<div>{title}</div>) : (

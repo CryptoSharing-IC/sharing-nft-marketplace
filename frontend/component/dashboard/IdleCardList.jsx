@@ -1,49 +1,81 @@
 import React from 'react'
-import NftCard from './NftCard'
-import AppContext from "../../AppContext"
-import { Principal } from "@dfinity/principal"
-import { dip721 } from "canisters/dip721"
-import { sharing } from "canisters/sharing"
 import { Link } from "react-router-dom"
+import ListingFlow from './ListingFlow';
 
-export default function IdleCardList () {
-    const { userPrincipal } = React.useContext(AppContext)
-    const [nfts, setNfts] = React.useState([])
+import { AppContext } from "../../App"
+import { useAsync } from 'react-async-hook';
 
-    async function fetch (userPrincipal) {
-        BigInt.prototype.toJSON = function () {
-            return this.toString();
-        };
-        if (!userPrincipal) {
-            return []
-        }
-        return await dip721.getUserTokens(userPrincipal)
-    }
-    React.useEffect(() => {
-        (async () => {
-            let nftsRes = await fetch(Principal.fromText("d3muz-iml3r-ou5hr-47nm2-hnnk5-aplkc-y2ql7-xehxt-kghb2-4dokl-gqe"))
-            setNfts(nftsRes)
-        })()
-    }, [userPrincipal])
+export function IdleCardList () {
 
-    return (
-        <>
-            <div className="tabs tabs-boxed">
-                <Link className="tab lg: tab-lg tab-active" to="/dashboard/idle">
-                    Idle
-                </Link>
-                <Link className="tab lg: tab-lg " to="/dashboard/listed">
-                    Listed
-                </Link>
-                <Link className="tab lg: tab-lg" to="/dashboard/rented">
-                    Rented
-                </Link>
-            </div>
-            <div className="flex flex-row flex-wrap justify-center gap-10">
-                {
-                    nfts.map((e, index) => (<NftCard key={index} nftData={e}></NftCard>))
-                }
-            </div>
-        </>
-    )
+    const { initDip721 } = React.useContext(AppContext);
+
+    const fetchNfts = async () => {
+        BigInt.prototype.toJSON = function () { return this.toString() };
+        console.log("request init dip721 canister")
+        let nftCanister = await initDip721();
+        console.log("request : initdip721 finished. ")
+        const userPrincipal = await window.ic?.plug?.agent?.getPrincipal()
+        console.log("request tokens start")
+        let nftsRes = await nftCanister.getUserTokens(userPrincipal);
+        console.log("result is : " + JSON.stringify(nftsRes));
+        return nftsRes;
+    };
+
+    //const [nfts, setNfts] = React.useState([])
+    let res = useAsync(fetchNfts, []);
+
+    return (<div>
+        <div className="tabs tabs-boxed">
+            <Link className="tab lg: tab-lg tab-active" to="/dashboard/idle">
+                Idle
+            </Link>
+            <Link className="tab lg: tab-lg " to="/dashboard/listed">
+                Listed
+            </Link>
+            <Link className="tab lg: tab-lg" to="/dashboard/rented">
+                Rented
+            </Link>
+        </div>
+        {res.loading && <div>Loading</div>}
+        {res.error && <div>Error: {res.error.message}</div>}
+        {res.result && (
+            <>
+
+                <div className="flex flex-row flex-wrap justify-center gap-10">
+                    {
+                        res.result.map((e, index) => {
+                            let attributes =
+                                function adapter (nft) {
+                                    let attributes = {};
+                                    if (nft.metadata.length !== 0) {
+                                        nft.metadata[0].attributes.forEach(element => {
+                                            attributes[element.key] = element.value;
+                                        });
+                                    }
+                                    return attributes;
+                                }(e);
+
+                            return (
+                                <div key={index}>
+                                    <div className="card w-80 bg-base-100 shadow-xl">
+                                        <figure className="px-5 pt-7">
+                                            <img src={e.metadata[0].location.Web} alt="img" className="rounded-xl" />
+                                        </figure>
+                                        <div className="card-body items-center text-center">
+                                            <h2 className="card-title">{attributes.name}</h2>
+                                            <p>{attributes.desc}</p>
+                                            <div className="card-actions">
+                                                <label htmlFor="listing-step" className="btn modal-button">Lending</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <ListingFlow nftData={{ ...attributes, index: e.index, Web: e.metadata[0].location.Web }}></ListingFlow>
+                                </div>
+                            )
+                        })
+                    }
+                </div>
+            </>
+        )}
+    </div>)
 }

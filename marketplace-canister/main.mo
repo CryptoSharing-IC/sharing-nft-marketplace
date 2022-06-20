@@ -26,11 +26,15 @@ import Ledger "./ledger/ledger.public.did";
 
 shared(msg) actor class Marketplace() = self {
     //TODO, init parameter
-    let sharingCanisterId = "rno2w-sqaaa-aaaaa-aaacq-cai";
+    let sharingCanisterId = "jpabj-zyaaa-aaaah-qaiya-cai";
     let sharingCanister: Sharing.NFToken = actor(sharingCanisterId);
 
-    let ledgerCanisterId = "qaa6y-5yaaa-aaaaa-aaafa-cai";
+    let ledgerCanisterId = "ryjl3-tyaaa-aaaaa-aaaba-cai";
     let ledgerCanister: Ledger.Self = actor(ledgerCanisterId);
+
+    let nftCansiterId = "my55u-diaaa-aaaah-qcoaa-cai"; 
+    let nftCansiter:Dip721.NFToken = actor(nftCansiterId);
+
     public type Result<X, Y> = Types.Result<X, Y>;
 
     public type UserProfile = UserDomain.UserProfile;
@@ -115,7 +119,7 @@ shared(msg) actor class Marketplace() = self {
         let caller = msg.caller;
         let id = getIdAndIncrementOne();
 
-        let nftCansiter : Dip721.NFToken = actor(cmd.canisterId); 
+        //let nftCansiter : Dip721.NFToken = actor(cmd.canisterId); 
         let tokenInfo: Dip721.TokenInfoExt =
         switch(await nftCansiter.getTokenInfo(cmd.nftId)) {
             case(#Ok(tokenInfo)) {
@@ -148,7 +152,7 @@ shared(msg) actor class Marketplace() = self {
         let caller = msg.caller;
         switch (ListingRepositories.getListing(listingDB, listingRepository, cmd.id)) {
             case (?l) {
-                let nftCansiter : Dip721.NFToken = actor(l.canisterId);
+                //let nftCansiter : Dip721.NFToken = actor(l.canisterId);
 
                 let nftOwner : Principal = switch(await nftCansiter.ownerOf(l.nftId)) {
                     case (#Ok(owner)) {
@@ -202,7 +206,7 @@ shared(msg) actor class Marketplace() = self {
                         return #Err(#mintFailed);
                     };
                 };
-                let listingProfile: ListingDomain.ListingProfile = ListingDomain.updateRedeemNftId(l, ?wTokenId);
+                let listingProfile: ListingDomain.ListingProfile = ListingDomain.updateListingStaked(l, ?wTokenId);
                 listingDB := ListingRepositories.saveListing(listingDB, listingRepository, listingProfile);
                 return #Ok(wTokenId);
             };
@@ -273,13 +277,26 @@ shared(msg) actor class Marketplace() = self {
 
     /// 分页查询 上架 nft 
     public query(msg)  func pageListings(q: ListingPageQuery) : async ListingPage {
+        let user : ?Principal = q.user;
         let pageSize = q.pageSize;
         let pageNum = q.pageNum;
         let status = q.status;
 
         ListingRepositories.pageListing(listingDB, listingRepository, pageSize, pageNum, func (id, profile) : Bool {
-            ListingDomain.listingStatusMatches(profile, status)
+            switch(user) {
+                case(?user) {
+                    return ListingDomain.listingUserMatches(profile, user) and status == profile.status;
+                };
+                case(null) {
+                    return status == profile.status;
+                };
+            }
+            
         }, ListingDomain.listingOrderUpdateTimeDesc)
+    };
+
+    public query(msg) func allListing() : async [ListingDomain.ListingProfile] {
+        ListingRepositories.allListing(listingDB);
     };
 
     // 租入 Lend 流程，先记录租入信息，例如哪个已经上架的 nft等
@@ -292,7 +309,7 @@ shared(msg) actor class Marketplace() = self {
                 if (listing.status != #Enable) {
                     return #Err(#listingNotEnable);
                 };
-                if((cmd.end - cmd.start)/1000000000/3600 < 1){
+                if((cmd.end - cmd.start)/3600 < 1){
                     return #Err(#parameterErr);
                 };
 
@@ -300,9 +317,9 @@ shared(msg) actor class Marketplace() = self {
                     return #Err(#parameterErr);
                 };
                 ///遍历所有的lend对象确保 资源可用 租赁时间不重叠
-                if(not rentTimeAvailable(listing.id, cmd.start, cmd.end)) {
-                    return #Err(#understock);
-                };
+                // if(not rentTimeAvailable(listing.id, cmd.start, cmd.end)) {
+                //     return #Err(#understock);
+                // };
                
                 let lendId = getIdAndIncrementOne();
                 let now = timeNow_();
@@ -310,7 +327,7 @@ shared(msg) actor class Marketplace() = self {
                 let accountIdentifier = Account.accountIdentifier(Principal.fromActor(self), Blob.fromArray(Account.beBytes64(lendId)));
                 
                 //以整数小时计费
-                let amount: Nat64 = Nat64.fromNat((cmd.end - cmd.start) * listing.price.decimals /1000000000/3600); 
+                let amount: Nat64 = Nat64.fromNat((cmd.end - cmd.start) * listing.price.decimals /3600); 
                 let lendOrder = LendDomain.createProfile(listing.id, lendId, caller, listing.owner ,now, cmd.start, cmd.end, accountIdentifier, amount);
                 lendDB := LendRepositories.saveLend(lendDB, lendRepository, lendOrder);
                 #Ok(lendOrder);

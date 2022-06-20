@@ -1,12 +1,13 @@
 import { Principal } from '@dfinity/principal';
 import React from 'react'
-import AppContext from '../../AppContext';
-import canisterIds from "../../../.dfx/local/canister_ids.json"
+import { AppContext } from "../../App"
+import canisterIds from "../../../canister_ids.json"
 import { idlFactory } from "../../canisters/nft/dip721.did.js"
 import createCanisterFromPlug from '../../utils/createCanisterFromPlug';
 
 
 export default function StakeStep (props) {
+    const { initDip721 } = React.useContext(AppContext);
     const status = {
         UNSTAKING: "UNSTAKING",
         STAKING: "STAKING",
@@ -14,15 +15,14 @@ export default function StakeStep (props) {
     }
 
     let [staking, setStaking] = React.useState(status.UNSTAKING);
-    let { canisters } = React.useContext(AppContext);
+
 
 
     async function onSubmit () {
         setStaking(status.STAKING);
-        let dip721Id = canisterIds["dip721"]["local"];
-        let nftCanister = await createCanisterFromPlug(dip721Id, idlFactory)
+        let nftCanister = await initDip721();
 
-        let res = await nftCanister.transfer(Principal.fromText(canisters.marketplaceCanisterId), props.nftData.index)
+        let res = await nftCanister.transfer(Principal.fromText(canisterIds["marketplace"]["ic"]), props.nftData.index)
         console.log("transfer nft result is : " + JSON.stringify(res))
         if (res?.Ok) {
             props.nextStep();
@@ -58,7 +58,6 @@ export default function StakeStep (props) {
                     </div>
                 </div>
             </div>
-
         </div >
 
 

@@ -1,17 +1,21 @@
 import React from 'react'
+import { AppContext } from "../../App"
 import createCanisterFromPlug from '../../utils/createCanisterFromPlug'
-import canisterIds from "../../../.dfx/local/canister_ids.json"
+import canisterIds from "../../../canister_ids.json"
 import { idlFactory } from "../../canisters/marketplace/marketplace.did.js"
 
 export default function MintStep (props) {
     const [err, setErr] = React.useState("");
+    const { initMarketplace } = React.useContext(AppContext);
+
     React.useEffect(() => {
         (async () => {
-            const marketplaceCanisterId = canisterIds["marketplace"]["local"];
-            const canister = await createCanisterFromPlug(marketplaceCanisterId, idlFactory);
+            const marketplaceCanisterId = canisterIds["marketplace"]["ic"];
+            const canister = await initMarketplace();
             //通知后端, nft质押完成
             const res = await canister.listingNFT({ id: props.listId });
-            res?.Ok ? props.nextStep() : setErr(res?.Err || "Failed to Mint!");
+            console.log("mint result is: " + JSON.stringify(res))
+            res["Ok"] ? props.nextStep() : setErr(res["Err"] || "Failed to Mint!");
         })()
     }, [])
 
@@ -32,7 +36,7 @@ export default function MintStep (props) {
                         <progress className="progress w-56 "></progress>
                     </div>)}
                     {err && (
-                        <div>err</div>
+                        <div>{err}</div>
                     )}
                 </div>
             </div>

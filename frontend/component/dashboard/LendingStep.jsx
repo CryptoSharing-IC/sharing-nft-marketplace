@@ -1,8 +1,10 @@
-import React, { useState } from 'react'
-import { useForm } from "react-hook-form";
-import { Principal } from "@dfinity/principal";
+import React from 'react'
+import { AppContext } from "../../App"
+import canisterIds from "../../../canister_ids.json"
 
-export default function LengingStep (props) {
+
+export default function LendingStep (props) {
+    const { initMarketplace } = React.useContext(AppContext);
 
     let [state, setState] = React.useState(
         {
@@ -11,7 +13,7 @@ export default function LengingStep (props) {
             price: 1
         }
     )
-    let [show, setShow] = useState("");
+    let [show, setShow] = React.useState("");
 
     const handleChange = e => {
         setState({
@@ -24,7 +26,8 @@ export default function LengingStep (props) {
     async function onSubmit () {
         //点击下一步 先提示本次操作的结果, 如果成功就进入下一步
         //TODO, add validater code
-        let dip721CanisteId = "rkp4c-7iaaa-aaaaa-aaaca-cai"
+        console.log("canisters ids is: " + JSON.stringify(canisterIds))
+        let dip721CanisteId = canisterIds["dip721"]["ic"];
         if (!state.availableUtil || !state.minPeriod || !state.price) {
             //temp code, 
             alert("输入不合法!");
@@ -36,11 +39,15 @@ export default function LengingStep (props) {
             nftId: props.nftData.index,
             name: props.nftData.name,
             desc: props.nftData.desc,
+            web: props.nftData.Web,
             availableUtil: Date.parse(state.availableUtil) / 1000,
             price: { decimals: state.price, symbol: "ICP" },
             minPeriod: state.minPeriod
         }
         console.log("perListingArg: " + JSON.stringify(preListingArg))
+
+        let marketplace = await initMarketplace();
+
         let reponse = await marketplace.preListingNFT(preListingArg)
         // check the result 
         console.log(reponse)
@@ -75,12 +82,12 @@ export default function LengingStep (props) {
                     </label>
                     <div className='flex flex-row items-center'>
                         <input type="number" className=" input-bordered  input w-20 max-w-xs" name="minPeriod" value={state.minPeriod} onChange={handleChange} />
-                        <span>天</span>
+                        <span>小时</span>
                     </div>
 
 
                     <label className="label">
-                        <span className="label-text">Price(ICP/day):</span>
+                        <span className="label-text">Price(ICP/小时):</span>
                     </label>
                     <input type="text" className=" input-bordered  input w-full max-w-xs" name="price" value={state.price} onChange={handleChange} />
 
@@ -88,9 +95,9 @@ export default function LengingStep (props) {
                         {
 
                             "PROGRESS": (<progress className="progress w-56"></progress>),
-                            "ERROR_RESULT": (<div class="alert alert-error shadow-lg">
+                            "ERROR_RESULT": (<div className="alert alert-error shadow-lg">
                                 <div>
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                     <span>Listing NFT failed!</span>
                                 </div>
                             </div>)

@@ -22,6 +22,8 @@ module {
         canisterId: Text;
         nftId: Nat;
         name: Text;
+        desc: Text;
+        web: Text;
         availableUtil: Timestamp;
         price: PriceUnit;  // 此数值表示价格，例如： 10000 表示 1 ICP
         owner: Principal;
@@ -54,19 +56,20 @@ module {
         nftId: Nat;
         name: Text;
         desc: Text;
+        web:Text;
         availableUtil: Timestamp;
-        price: PriceUnit;  // 此数值表示价格，例如： 10000 表示 1 ICP
+        price: PriceUnit;  // 此数值表示价格，例如：10000 表示 1 ICP  
         //metadata: Sharing.TokenInfoExt;
     };
 
     public func createProfile(cmd: ListingCreateCommand, id: ListingId, owner: Principal, now: Timestamp, metadata: Sharing.TokenInfoExt, redeemNftId: ?Nat) : ListingProfile {
-
         return {
             id = id ;
             canisterId = cmd.canisterId ;
             nftId = cmd.nftId ;
             name = cmd.name;
             desc = cmd.desc;
+            web = cmd.web;
             availableUtil = cmd.availableUtil ;
             price = cmd.price ;
             owner = owner ;
@@ -83,12 +86,14 @@ module {
         canisterId: Text;
         nftId: Nat;
         name: Text;
+        desc: Text;
+        web: Text;
         availableUtil: Timestamp;
         price: PriceUnit;  // 此数值表示价格，例如： 10000 表示 1 ICP
         owner: Principal;
         status: ListingStatus;
         createdAt: Timestamp;
-        metadata: Sharing.TokenInfoExt;
+        //metadata: Sharing.TokenInfoExt;
     };
 
     public func updateListing(cmd: ListingEditCommand, profile: ListingProfile, now: Timestamp, redeemNftId: Nat) : ListingProfile {
@@ -98,27 +103,31 @@ module {
             canisterId = cmd.canisterId ;
             nftId = cmd.nftId ;
             name = cmd.name ;
+            desc = cmd.desc;
+            web = cmd.web;
             availableUtil = cmd.availableUtil ;
             price = cmd.price ;
             status = cmd.status;
             owner = profile.owner ;
             createdAt = profile.createdAt ;
             updatedAt = now ;
-            metadata = cmd.metadata;
+            //metadata = cmd.metadata;
             redeemNftId = ?redeemNftId;
         }
     };
 
-    public func updateRedeemNftId(l: ListingProfile, redeemNftId: ?Nat) : ListingProfile{
+    public func updateListingStaked(l: ListingProfile, redeemNftId: ?Nat) : ListingProfile{
         return {
             id = l.id ;
             canisterId = l.canisterId ;
             nftId = l.nftId ;
             name = l.name;
+            desc = l.desc;
+            web = l.web;
             availableUtil = l.availableUtil ;
             price = l.price ;
             owner = l.owner ;
-            status = l.status;
+            status = #Enable;
             createdAt = l.createdAt ;
             updatedAt = l.updatedAt;
             redeemNftId = redeemNftId;
@@ -127,9 +136,10 @@ module {
     };
 
     public type ListingPageQuery = {
+        user: ?Principal;
         pageSize: Nat;
         pageNum: Nat;
-        status: Text;
+        status: ListingStatus;
     };
 
     public func listingStatusToText(status: ListingStatus) : Text {
@@ -143,6 +153,10 @@ module {
 
     public func listingStatusMatches(profile: ListingProfile, status: Text) : Bool {
         listingStatusToText(profile.status) == Utils.toLowerCase(status)
+    };
+
+    public func listingUserMatches(profile: ListingProfile, user: Principal) : Bool {
+        profile.owner == user;
     };
 
     /// 按更新时间倒序，发布时间越大表示越新，排在前面
