@@ -252,8 +252,14 @@ shared(msg) actor class Marketplace() = self {
                     case(#Ok(txId)){
                         return #Ok(l.id);
                     };
-                    case(_){
-                        return #Err(#transferFailed)
+                    case(#Err(err)){
+                        var errMsg: Text = switch(err){
+                            case (#Unauthorized) {"Unauthorized"};
+                            case (#TokenNotExist) {"TokenNotExist"};
+                            case (#InvalidOperator) {"InvalidOperator"};
+                            case (#UserNotExist) {"UserNotExist"};
+                        };
+                        return #Err(#transferFailed(errMsg))
                     };
                 };
 
@@ -316,6 +322,7 @@ shared(msg) actor class Marketplace() = self {
                 if(cmd.end > listing.availableUtil) {
                     return #Err(#parameterErr);
                 };
+                //todo
                 ///遍历所有的lend对象确保 资源可用 租赁时间不重叠
                 // if(not rentTimeAvailable(listing.id, cmd.start, cmd.end)) {
                 //     return #Err(#understock);
@@ -356,6 +363,17 @@ shared(msg) actor class Marketplace() = self {
         end - begin >= 0;
     };
 
+    func myAccountId() : Account.AccountIdentifier {
+        Account.accountIdentifier(Principal.fromActor(self), Account.defaultSubaccount())
+    };
+
+    public query(msg) func accountId(): async Blob {
+        return Account.accountIdentifier(Principal.fromActor(self), Account.defaultSubaccount());
+    };
+
+    public  func canisterBalance() : async Ledger.Tokens {
+        await ledgerCanister.account_balance({ account =  Account.accountIdentifier(Principal.fromActor(self), Account.defaultSubaccount()) })
+    };
     /// 租入 Lend nft
     /// 校验支付信息，成功后 mint nft 并返回 TODO
     public shared(msg) func notify(cmd: LendIdCommand) : async Result<Nat64, Error> {
@@ -365,36 +383,45 @@ shared(msg) actor class Marketplace() = self {
         switch(LendRepositories.getLend(lendDB, lendRepository, lendId)) {
             case(?lend) {
                 let subaccountBalance : {e8s: Nat64} = await ledgerCanister.account_balance({account:Blob = lend.accountIdentifier});
-                if(subaccountBalance.e8s != lend.amount) {
+                
+                if(subaccountBalance.e8s < lend.amount) {
                     return #Err(#parameterErr)
                 };
                     //pay success 
                     //0. 把钱转回主账户 
                     
-                    let transferArgs: Ledger.TransferArgs = {
-                        to = Account.accountIdentifier(Principal.fromActor(self), Account.defaultSubaccount());
-                        fee = {e8s=10000};
-                        memo = lend.id;
-                        from_subaccount = ?lend.accountIdentifier;
-                        created_at_time = ?{timestamp_nanos = Nat64.fromNat(Int.abs(timeNow_()))};   
-                        amount = {e8s = subaccountBalance.e8s};
-                    };
+                let transferArgs: Ledger.TransferArgs = {
+                    to = Account.accountIdentifier(Principal.fromActor(self), Account.defaultSubaccount());
+                    fee = {e8s=10000};
+                    memo = lend.id;
+                    from_subaccount = ?lend.accountIdentifier;
+                    created_at_time = ?{timestamp_nanos = Nat64.fromNat(Int.abs(timeNow_()))};   
+                    amount = {e8s = subaccountBalance.e8s};
+                };
 
-                    type TransferError = {
-                        #TxTooOld : { allowed_window_nanos : Nat64 };
-                        #BadFee : { expected_fee : Ledger.Tokens };
-                        #TxDuplicate : { duplicate_of : BlockIndex };
-                        #TxCreatedInFuture;
-                        #InsufficientFunds : { balance : Ledger.Tokens };
-                    };
+                type TransferError = {
+                    #TxTooOld : { allowed_window_nanos : Nat64 };
+                    #BadFee : { expected_fee : Ledger.Tokens };
+                    #TxDuplicate : { duplicate_of : BlockIndex };
+                    #TxCreatedInFuture;
+                    #InsufficientFunds : { balance : Ledger.Tokens };
+                };
                     type BlockIndex = Nat64;
                     let res:{ #Ok : BlockIndex; #Err : TransferError } = await ledgerCanister.transfer(transferArgs);
                     switch(res){
                         case(#Ok(blockIndex)){
 
                         };
-                        case(_){
-                            return #Err(#transferFailed);
+                        case(#Err(transferErr)){
+                            var errMsg: Text = switch(transferErr) {
+                                case(#TxTooOld(_)){"TxTooOld"};
+                                case(#BadFee(_)){"BadFee"};
+                                case(#TxDuplicate(_)){"TxDuplicate"};
+                                case(#TxCreatedInFuture(_)){"TxCreatedInFuture"};
+                                case(#InsufficientFunds(_)){"InsufficientFunds"};
+                            };
+                            
+                            return #Err(#transferFailed(errMsg));
                         };
                     };
                     //1. 给买家铸造使用权nft, 
@@ -455,8 +482,16 @@ shared(msg) actor class Marketplace() = self {
                     switch(transferRentRes){
                         case(#Ok(blockIndex)){
                         };
-                        case(_){
-                            return #Err(#transferFailed);
+                        case(#Err(transferErr)){
+                            var errMsg: Text = switch(transferErr) {
+                                case(#TxTooOld(_)){"TxTooOld in paid the rent"};
+                                case(#BadFee(_)){"BadFee in paid the rent"};
+                                case(#TxDuplicate(_)){"TxDuplicate in paid the rent"};
+                                case(#TxCreatedInFuture(_)){"TxCreatedInFuture in paid the rent"};
+                                case(#InsufficientFunds(_)){"InsufficientFunds in paid the rent"};
+                            };
+                            
+                            return #Err(#transferFailed(errMsg));
                         };
                     };
                     return #Ok(lend.id);

@@ -41,7 +41,7 @@ export default function LendingStep (props) {
             desc: props.nftData.desc,
             web: props.nftData.Web,
             availableUtil: Date.parse(state.availableUtil) / 1000,
-            price: { decimals: state.price, symbol: "ICP" },
+            price: { decimals: state.price * 100000000, symbol: "ICP" },
             minPeriod: state.minPeriod
         }
         console.log("perListingArg: " + JSON.stringify(preListingArg))
@@ -82,12 +82,12 @@ export default function LendingStep (props) {
                     </label>
                     <div className='flex flex-row items-center'>
                         <input type="number" className=" input-bordered  input w-20 max-w-xs" name="minPeriod" value={state.minPeriod} onChange={handleChange} />
-                        <span>小时</span>
+                        <span>hour</span>
                     </div>
 
 
                     <label className="label">
-                        <span className="label-text">Price(ICP/小时):</span>
+                        <span className="label-text">Price(ICP/hour):</span>
                     </label>
                     <input type="text" className=" input-bordered  input w-full max-w-xs" name="price" value={state.price} onChange={handleChange} />
 
@@ -104,8 +104,8 @@ export default function LendingStep (props) {
                         }[show]
                     }
                     <div className="modal-action justify-end">
-                        <label htmlFor="listing-step" className="btn" disabled={show == "PROGRESS" ? "disabled" : ""}>取消</label>
-                        <button className="btn" onClick={async () => { onSubmit() }} disabled={show == "PROGRESS" ? "disabled" : ""}>下一步</button>
+                        <label htmlFor="listing-step" className="btn" disabled={show == "PROGRESS" ? "disabled" : ""}>Cancel</label>
+                        <button className="btn" onClick={async () => { onSubmit() }} disabled={show == "PROGRESS" ? "disabled" : ""}>Next</button>
                         <div />
                     </div>
                 </div>

@@ -4,6 +4,7 @@ import path from "path"
 import dfxJson from "./dfx.json"
 import fs from "fs"
 
+process.env["DFX_NETWORK"] = "ic"
 const isDev = process.env["DFX_NETWORK"] !== "ic"
 
 let canisterIds
@@ -26,7 +27,6 @@ const aliases = Object.entries(dfxJson.canisters).reduce(
       "canisters",
       name,
     )
-
     return {
       ...acc,
       ["canisters/" + name]: path.join(outputRoot, "index" + ".js"),

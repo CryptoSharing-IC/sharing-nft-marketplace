@@ -51,8 +51,8 @@ export default function StakeStep (props) {
                             </div>
                         </div>
                         <div className='flex flex-row justify-end'>
-                            <label htmlFor="listing-step" className="btn mr-4" disabled={staking == status.STAKING ? "disabled" : ""}>取消</label>
-                            <button className="btn" onClick={async () => { onSubmit() }} disabled={staking == status.STAKING ? "disabled" : ""}>质押</button>
+                            <label htmlFor="listing-step" className="btn mr-4" disabled={staking == status.STAKING ? "disabled" : ""}>Cancel</label>
+                            <button className="btn" onClick={async () => { onSubmit() }} disabled={staking == status.STAKING ? "disabled" : ""}>Stake</button>
                         </div>
                         <div />
                     </div>

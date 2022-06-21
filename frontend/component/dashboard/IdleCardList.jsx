@@ -4,6 +4,8 @@ import ListingFlow from './ListingFlow';
 
 import { AppContext } from "../../App"
 import { useAsync } from 'react-async-hook';
+import Progress from "../Progress"
+import Error from "../Error"
 
 export function IdleCardList () {
 
@@ -36,8 +38,8 @@ export function IdleCardList () {
                 Rented
             </Link>
         </div>
-        {res.loading && <div>Loading</div>}
-        {res.error && <div>Error: {res.error.message}</div>}
+        {res.loading && <Progress></Progress>}
+        {res.error && <Error errorMsg={res.error.message}></Error>}
         {res.result && (
             <>
 

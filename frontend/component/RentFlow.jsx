@@ -19,8 +19,10 @@ export default function RentFlow (props) {
                 <div className="modal-box">
                     {
                         {
-                            1: <RentStep listing={props.listing} lend={lend} setLend={setLend}></RentStep>,
-
+                            1: <RentStep listing={props.listing} lend={lend} setLend={setLend} nextStep={nextStep}></RentStep>,
+                            2: <PayStep listing={props.listing} lend={lend} setLend={setLend} nextStep={nextStep}></PayStep>,
+                            3: <MintUseNftStep listing={props.listing} lend={lend} setLend={setLend} nextStep={nextStep}></MintUseNftStep>,
+                            4: <FinishRentStep listing={props.listing} lend={lend} setLend={setLend} nextStep={nextStep}></FinishRentStep>
                         }[currentStep]
                     }
                 </div>

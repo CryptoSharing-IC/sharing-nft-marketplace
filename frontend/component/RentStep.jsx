@@ -84,7 +84,7 @@ export default function LendingStep (props) {
                     <input type="datetime-local" className=" input-bordered  input w-full max-w-xs" name="end" value={state.end} onChange={handleChange} />
 
                     <label className="label">
-                        <span className="label-text">Total cost: {(state.start && state.end) ? ((Date.parse(state.end) - (Date.parse(state.start))) / 1000 / 3600 * props.listing.price.decimals.toString()) : "- -" + "icp"}</span>
+                        <span className="label-text">Total cost: {(state.start && state.end) ? ((Date.parse(state.end) - (Date.parse(state.start))) / 1000 / 3600 * props.listing.price.decimals.toString() / 100000000) : "- -" + "icp"}</span>
                     </label>
                     {
                         {
@@ -99,8 +99,8 @@ export default function LendingStep (props) {
                         }[show]
                     }
                     <div className="modal-action justify-end">
-                        <label htmlFor="rent-step" className="btn" disabled={show == "PROGRESS" ? "disabled" : ""}>取消</label>
-                        <button className="btn" onClick={async () => { onSubmit() }} disabled={show == "PROGRESS" ? "disabled" : ""}>下一步</button>
+                        <label htmlFor="rent-step" className="btn" disabled={show == "PROGRESS" ? "disabled" : ""}>Cancel</label>
+                        <button className="btn" onClick={async () => { onSubmit() }} disabled={show == "PROGRESS" ? "disabled" : ""}>Next</button>
                         <div />
                     </div>
                 </div>

@@ -65,7 +65,7 @@ module {
         #mintFailed;   
         #renting; 
         #burnFailed;
-        #transferFailed;
+        #transferFailed: Text;
         #listingLocked;
         #parameterErr;
         #understock;
