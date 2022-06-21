@@ -253,7 +253,7 @@ shared(msg) actor class Marketplace() = self {
                         return #Ok(l.id);
                     };
                     case(#Err(err)){
-                        var errMsg: Text = switch(err){
+                        let errMsg: Text = switch(err){
                             case (#Unauthorized) {"Unauthorized"};
                             case (#TokenNotExist) {"TokenNotExist"};
                             case (#InvalidOperator) {"InvalidOperator"};
@@ -374,6 +374,19 @@ shared(msg) actor class Marketplace() = self {
     public  func canisterBalance() : async Ledger.Tokens {
         await ledgerCanister.account_balance({ account =  Account.accountIdentifier(Principal.fromActor(self), Account.defaultSubaccount()) })
     };
+
+    public func lendBalance(cmd: LendIdCommand) : async Result<Ledger.Tokens, Error> {
+        switch(LendRepositories.getLend(lendDB, lendRepository, cmd.id)){
+            case(?lend) {
+                let balanceRes : Ledger.Tokens =   await ledgerCanister.account_balance({ account = lend.accountIdentifier });
+                return #Ok(balanceRes);
+            };
+            case(null) {
+                return #Err(#notFound);
+            };
+        };
+       
+    };
     /// 租入 Lend nft
     /// 校验支付信息，成功后 mint nft 并返回 TODO
     public shared(msg) func notify(cmd: LendIdCommand) : async Result<Nat64, Error> {
@@ -396,105 +409,96 @@ shared(msg) actor class Marketplace() = self {
                     memo = lend.id;
                     from_subaccount = ?lend.accountIdentifier;
                     created_at_time = ?{timestamp_nanos = Nat64.fromNat(Int.abs(timeNow_()))};   
-                    amount = {e8s = subaccountBalance.e8s};
+                    amount = {e8s = subaccountBalance.e8s - 10000};
                 };
-
-                type TransferError = {
-                    #TxTooOld : { allowed_window_nanos : Nat64 };
-                    #BadFee : { expected_fee : Ledger.Tokens };
-                    #TxDuplicate : { duplicate_of : BlockIndex };
-                    #TxCreatedInFuture;
-                    #InsufficientFunds : { balance : Ledger.Tokens };
-                };
-                    type BlockIndex = Nat64;
-                    let res:{ #Ok : BlockIndex; #Err : TransferError } = await ledgerCanister.transfer(transferArgs);
-                    switch(res){
-                        case(#Ok(blockIndex)){
-
+                type BlockIndex = Nat64;
+                let res:{ #Ok : BlockIndex; #Err : Ledger.TransferError } = await ledgerCanister.transfer(transferArgs);
+                switch(res){
+                    case(#Ok(blockIndex)){};
+                    case(#Err(transferErr)){
+                        let errMsg: Text = switch(transferErr) {
+                            case(#TxTooOld(_)){"TxTooOld"};
+                            case(#BadFee(_)){"BadFee"};
+                            case(#TxDuplicate(_)){"TxDuplicate"};
+                            case(#TxCreatedInFuture(_)){"TxCreatedInFuture"};
+                            case(#InsufficientFunds(_)){"InsufficientFunds"};
                         };
-                        case(#Err(transferErr)){
-                            var errMsg: Text = switch(transferErr) {
-                                case(#TxTooOld(_)){"TxTooOld"};
-                                case(#BadFee(_)){"BadFee"};
-                                case(#TxDuplicate(_)){"TxDuplicate"};
-                                case(#TxCreatedInFuture(_)){"TxCreatedInFuture"};
-                                case(#InsufficientFunds(_)){"InsufficientFunds"};
-                            };
                             
-                            return #Err(#transferFailed(errMsg));
+                        return #Err(#transferFailed(errMsg));
                         };
-                    };
+                };
                     //1. 给买家铸造使用权nft, 
                     ///////////////
-                    let l: ListingDomain.ListingProfile = switch (ListingRepositories.getListing(listingDB, listingRepository, lend.listingId)) {
-                        case (?listing) {
+                let l: ListingDomain.ListingProfile = switch (ListingRepositories.getListing(listingDB, listingRepository, lend.listingId)) {
+                    case (?listing) {
                             listing;
-                        };
-                        case (null) {
-                            return #Err(#listingNotFound);
+                    };
+                    case (null) {
+                        return #Err(#listingNotFound);
+                    }
+                };
+                //是应该nft 的原始信息保存在listing对象里 这样就不用每次查找了
+                let nftCansiter : Dip721.NFToken = actor(l.canisterId); 
+                let tokenMetadata = switch(await nftCansiter.getTokenInfo(l.nftId)){
+                    case(#Ok(tokenInfo)) { 
+                        switch(tokenInfo.metadata) {
+                            case(?metadata){
+                                metadata;
+                            };
+                            case(_){
+                                Prelude.unreachable();//
+                            };
                         }
                     };
-                   let nftCansiter : Dip721.NFToken = actor(l.canisterId); 
-                   let tokenMetadata = switch(await nftCansiter.getTokenInfo(l.nftId)){
-                        case(#Ok(tokenInfo)) { 
-                            switch(tokenInfo.metadata) {
-                                case(?metadata){
-                                    metadata;
-                                };
-                                case(_){
-                                    Prelude.unreachable();//
-                               };
-                            }
-                        };
-                        case(_) {
-                            return #Err(#notFound);
-                        };
+                    case(_) {
+                        return #Err(#notFound);
                     };
-                    let attribute: Sharing.Attribute = {
-                        key = "type";
-                        value = "uNFT";
-                    };
-                    let wTokenMetadata: Sharing.TokenMetadata = {
-                        filetype = tokenMetadata.filetype;
-                        attributes = Arrays.make<Sharing.Attribute>(attribute);
-                        location = tokenMetadata.location;
-                    };
-                    let uTokenId = switch(await sharingCanister.mint(caller, ?wTokenMetadata)){
-                        case(#Ok((wTokenId, _))){
+                };
+                let attribute: Sharing.Attribute = {
+                    key = "type";
+                    value = "uNFT";
+                };
+                let wTokenMetadata: Sharing.TokenMetadata = {
+                    filetype = tokenMetadata.filetype;
+                    attributes = Arrays.make<Sharing.Attribute>(attribute);
+                    location = tokenMetadata.location;
+                };
+                let uTokenId = switch(await sharingCanister.mint(caller, ?wTokenMetadata)){
+                    case(#Ok((wTokenId, _))){
                             wTokenId;
-                        };
-                        case(_){
-                            return #Err(#mintFailed);
-                        };
                     };
+                    case(_){
+                        return #Err(#mintFailed);
+                    };
+                };
                     
-                    //2. 给拥有者分成 
+                    //2. 发放租金
                
-                    let transferRentArgs: Ledger.TransferArgs = {
-                        to = Account.accountIdentifier(lend.nftOwner, Account.defaultSubaccount());
-                        fee = {e8s=10000};
-                        memo = lend.id;
-                        from_subaccount = null;
-                        created_at_time = ?{timestamp_nanos = Nat64.fromNat(Int.abs(timeNow_()))};
-                        amount = {e8s = lend.amount * 9 / 10};
+                let transferRentArgs: Ledger.TransferArgs = {
+                    to = Account.accountIdentifier(lend.nftOwner, Account.defaultSubaccount());
+                    fee = {e8s=10000};
+                    memo = lend.id;
+                    from_subaccount = null;
+                    created_at_time = ?{timestamp_nanos = Nat64.fromNat(Int.abs(timeNow_()))};
+                    amount = {e8s = lend.amount * 9 / 10};
+                };
+                let transferRentRes:{ #Ok : BlockIndex; #Err : Ledger.TransferError } = await ledgerCanister.transfer(transferRentArgs);
+                switch(transferRentRes){
+                    case(#Ok(blockIndex)){
                     };
-                    let transferRentRes:{ #Ok : BlockIndex; #Err : TransferError } = await ledgerCanister.transfer(transferRentArgs);
-                    switch(transferRentRes){
-                        case(#Ok(blockIndex)){
-                        };
-                        case(#Err(transferErr)){
-                            var errMsg: Text = switch(transferErr) {
-                                case(#TxTooOld(_)){"TxTooOld in paid the rent"};
-                                case(#BadFee(_)){"BadFee in paid the rent"};
-                                case(#TxDuplicate(_)){"TxDuplicate in paid the rent"};
-                                case(#TxCreatedInFuture(_)){"TxCreatedInFuture in paid the rent"};
-                                case(#InsufficientFunds(_)){"InsufficientFunds in paid the rent"};
-                            };
+                    case(#Err(transferErr)){
+                        let errMsg: Text = switch(transferErr) {
+                        case(#TxTooOld(_)){"TxTooOld in paid the rent"};
+                        case(#BadFee(_)){"BadFee in paid the rent"};
+                        case(#TxDuplicate(_)){"TxDuplicate in paid the rent"};
+                        case(#TxCreatedInFuture(_)){"TxCreatedInFuture in paid the rent"};
+                        case(#InsufficientFunds(_)){"InsufficientFunds in paid the rent"};
+                    };
                             
-                            return #Err(#transferFailed(errMsg));
-                        };
+                    return #Err(#transferFailed(errMsg));
                     };
-                    return #Ok(lend.id);
+                };
+                return #Ok(lend.id);
                 
             };
             case(null) {
