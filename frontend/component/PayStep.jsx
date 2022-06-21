@@ -7,7 +7,7 @@ import { error } from 'daisyui/src/colors';
 export default function PayStep (props) {
     const { initMarketplace } = React.useContext(AppContext);
     let [show, setShow] = React.useState("");
-    // let [error, setError] = React.useState(null);
+    let [error, setError] = React.useState(null);
 
     let amount = +props.lend["amount"].toString() / 100000000;
 
@@ -29,6 +29,7 @@ export default function PayStep (props) {
             props.nextStep();
         } catch (error) {
             console.log("error message is: " + error.message)
+            setError(error.message + 'you can click Pay button to retry.')
             setShow("ERROR_RESULT")
         }
     }
