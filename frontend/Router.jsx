@@ -6,6 +6,7 @@ import Rented from "./component/dashboard/Rented"
 import { IdleCardList } from "./component/dashboard/IdleCardList"
 import Listed from "./component/dashboard/Listed"
 import RentedList from "./component/RentedList"
+import Unft from "./component/dashboard/Unft"
 
 const BaseRouter = () => (
   <BrowserRouter>
@@ -20,6 +21,7 @@ const BaseRouter = () => (
         <Route path="/dashboard/idle" element={<IdleCardList></IdleCardList>}></Route>
         <Route path="/dashboard/listed" element={<Listed></Listed>}></Route>
         <Route path="/dashboard/rented" element={<Rented></Rented>}></Route>
+        <Route path="/dashboard/unft" element={<Unft></Unft>}></Route>
       </Route>
     </Routes>
   </BrowserRouter>

@@ -41,11 +41,14 @@ export default function Listed () {
           Listed
         </Link>
         <Link className="tab lg: tab-lg" to="/dashboard/rented">
+          Redeemed
+        </Link>
+        <Link className="tab lg: tab-lg" to="/dashboard/unft">
           Rented
         </Link>
       </div>
       {res.loading && <Progress></Progress>}
-      {res.error && <Error></Error>}
+      {res.error && <Error errorMsg={res.error.message}></Error>}
       {res.result && res.result.data.length == 0 && <NoData></NoData>}
       {res.result && res.result.data.length != 0 && (
         <>

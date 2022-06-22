@@ -35,6 +35,10 @@ export function IdleCardList () {
                 Listed
             </Link>
             <Link className="tab lg: tab-lg" to="/dashboard/rented">
+                Redeemed
+            </Link>
+
+            <Link className="tab lg: tab-lg" to="/dashboard/unft">
                 Rented
             </Link>
         </div>

@@ -550,6 +550,40 @@ shared(msg) actor class NFToken(
         return ret.toArray();
     };
 
+    public query func getUserUTokens(owner: Principal) : async [TokenInfoExt] {
+        let tokenIds = switch (users.get(owner)) {
+            case (?user) {
+                TrieSet.toArray(user.tokens)
+            };
+            case _ {
+                []
+            };
+        };
+        let ret = Buffer.Buffer<TokenInfoExt>(tokenIds.size());
+    
+        for(id in Iter.fromArray(tokenIds)) {
+            ret.add(_tokenInfotoExt(_unwrap(tokens.get(id))));
+        };
+        return ret.toArray();
+    };
+
+    public query func getUserRTokens(owner: Principal) : async [TokenInfoExt] {
+        let tokenIds = switch (users.get(owner)) {
+            case (?user) {
+                TrieSet.toArray(user.tokens)
+            };
+            case _ {
+                []
+            };
+        };
+        let ret = Buffer.Buffer<TokenInfoExt>(tokenIds.size());
+    
+        for(id in Iter.fromArray(tokenIds)) {
+            ret.add(_tokenInfotoExt(_unwrap(tokens.get(id))));
+        };
+        return ret.toArray();
+    };
+
     public query func ownerOf(tokenId: Nat): async Result<Principal, Errors> {
         switch (_ownerOf(tokenId)) {
             case (?owner) {
