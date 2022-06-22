@@ -3,6 +3,9 @@ import { Link } from "react-router-dom"
 
 import { AppContext } from "../../App"
 import { useAsync } from 'react-async-hook';
+import Progress from '../Progress';
+import Error from '../Error';
+import NoData from '../NoData';
 
 export default function Listed () {
 
@@ -41,9 +44,10 @@ export default function Listed () {
           Rented
         </Link>
       </div>
-      {res.loading && <div>Loading</div>}
-      {res.error && <div>Error: {res.error.message}</div>}
-      {res.result && (
+      {res.loading && <Progress></Progress>}
+      {res.error && <Error></Error>}
+      {res.result && res.result.data.length == 0 && <NoData></NoData>}
+      {res.result && res.result.data.length != 0 && (
         <>
           <div className="flex flex-row flex-wrap justify-center gap-10">
             {
