@@ -18,7 +18,7 @@ export default function Unft () {
         console.log("request : initSharing finished. ")
         const userPrincipal = await window.ic?.plug?.agent?.getPrincipal()
         console.log("request tokens start")
-        let nftsRes = await nftCanister.getUserUTokens(userPrincipal);
+        let nftsRes = await nftCanister.getUserTokens(userPrincipal);
         console.log("result is : " + JSON.stringify(nftsRes));
         return nftsRes;
     };
@@ -28,7 +28,7 @@ export default function Unft () {
 
     return (<div>
         <div className="tabs tabs-boxed">
-            <Link className="tab lg: tab-lg tab-active" to="/dashboard/idle">
+            <Link className="tab lg: tab-lg " to="/dashboard/idle">
                 Idle
             </Link>
             <Link className="tab lg: tab-lg " to="/dashboard/listed">
@@ -38,7 +38,7 @@ export default function Unft () {
                 Redeemed
             </Link>
 
-            <Link className="tab lg: tab-lg" to="/dashboard/unft">
+            <Link className="tab lg: tab-lg tab-active" to="/dashboard/unft">
                 Rented
             </Link>
         </div>
@@ -47,12 +47,12 @@ export default function Unft () {
         {res.result && (
             <>
 
-                <div className="flex flex-row flex-wrap justify-center gap-10">
+                <div className="flex flex-row flex-wrap justify-center gap-10 mb-500">
                     {
                         res.result.filter((item, index, array) => {
                             console.log("nft in filter is: " + JSON.stringify(item))
+                            return item["metadata"][0]["attributes"][0]["value"] == "uNFT"
                         })
-
 
                             .map((e, index) => {
                                 let attributes =
@@ -73,11 +73,9 @@ export default function Unft () {
                                                 <img src={e.metadata[0].location.Web} alt="img" className="rounded-xl" />
                                             </figure>
                                             <div className="card-body items-center text-center">
-                                                <h2 className="card-title">{attributes.name}</h2>
-                                                <p>{attributes.desc}</p>
-                                                <div className="card-actions">
-                                                    <label htmlFor="listing-step" className="btn modal-button">Lending</label>
-                                                </div>
+                                                <h2 className="card-title">"Your uNFT"</h2>
+                                                <p>can use this nft to on behalf of the original nft.</p>
+
                                             </div>
                                         </div>
                                         <ListingFlow nftData={{ ...attributes, index: e.index, Web: e.metadata[0].location.Web }}></ListingFlow>

@@ -42,8 +42,12 @@ export default function Rented () {
         <Link className="tab lg: tab-lg tab-active" to="/dashboard/rented">
           Redeemed
         </Link>
+
         <Link className="tab lg: tab-lg" to="/dashboard/unft">
-          Rented
+          UNFT
+        </Link>
+        <Link className="tab lg: tab-lg" to="/dashboard/rnft">
+          RNFT
         </Link>
       </div>
       {res.loading && <Progress></Progress>}

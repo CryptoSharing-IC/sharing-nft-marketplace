@@ -7,6 +7,7 @@ import { IdleCardList } from "./component/dashboard/IdleCardList"
 import Listed from "./component/dashboard/Listed"
 import RentedList from "./component/RentedList"
 import Unft from "./component/dashboard/Unft"
+import Rnft from "./component/dashboard/Rnft"
 
 const BaseRouter = () => (
   <BrowserRouter>
@@ -22,6 +23,7 @@ const BaseRouter = () => (
         <Route path="/dashboard/listed" element={<Listed></Listed>}></Route>
         <Route path="/dashboard/rented" element={<Rented></Rented>}></Route>
         <Route path="/dashboard/unft" element={<Unft></Unft>}></Route>
+        <Route path="/dashboard/rnft" element={<Rnft></Rnft>}></Route>
       </Route>
     </Routes>
   </BrowserRouter>

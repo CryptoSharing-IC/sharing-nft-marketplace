@@ -111,10 +111,13 @@ function App () {
         <div>
           <img src={bg} alt="bg"></img>
         </div>
+        <div className="min-h-800">
+          <Outlet></Outlet>
 
-        <Outlet></Outlet>
+        </div>
 
-        <Footer></Footer>
+
+        {/* <Footer></Footer> */}
       </div>
     </AppContext.Provider>
   )

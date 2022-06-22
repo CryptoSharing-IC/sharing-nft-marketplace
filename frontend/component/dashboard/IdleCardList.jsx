@@ -39,7 +39,10 @@ export function IdleCardList () {
             </Link>
 
             <Link className="tab lg: tab-lg" to="/dashboard/unft">
-                Rented
+                UNFT
+            </Link>
+            <Link className="tab lg: tab-lg" to="/dashboard/rnft">
+                RNFT
             </Link>
         </div>
         {res.loading && <Progress></Progress>}
