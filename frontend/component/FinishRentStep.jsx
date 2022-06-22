@@ -17,7 +17,7 @@ export default function FinishRentStep () {
                     <h2>Finished! now your nft is on User list!</h2>
                 </div>
                 <div className="modal-action justify-end mr-2">
-                    <label htmlFor="listing-step" className="btn" >完成</label>
+                    <label htmlFor="rent-step" className="btn" >完成</label>
                 </div>
             </div>
         </div>

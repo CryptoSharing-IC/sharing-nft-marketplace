@@ -434,9 +434,9 @@ shared(msg) actor class Marketplace() = self {
                 let block : Ledger.Block = queryBlockResponse.blocks[0];
                 let transaction : Ledger.Transaction = block.transaction;
                 let memo : Ledger.Memo = transaction.memo;
-                if(not Nat64.equal(memo, lend.id)){
-                    return #Err(#parameterErr("memo error."));
-                };
+                // if(not Nat64.equal(memo, lend.id)){
+                //     return #Err(#parameterErr("memo error."));
+                // };
 
                 switch(transaction.operation: ?Ledger.Operation) {
                     case(?o) {                

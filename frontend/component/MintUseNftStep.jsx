@@ -11,7 +11,7 @@ export default function MintUseNftStep (props) {
             const canister = await initMarketplace();
             //通知后端, nft质押完成
             console.log("start notify, lend id is: " + props.lend.id)
-            const res = await canister.notify({ id: props.lend.id });
+            const res = await canister.notify({ id: props.lend.id }, props.height);
             console.log("mint result is: " + JSON.stringify(res))
             res["Ok"] ? props.nextStep() : setErr(res["Err"] || "Failed To Mint NFT!");
         })()

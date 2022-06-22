@@ -9,7 +9,8 @@ export default function PayStep (props) {
     let [show, setShow] = React.useState("");
     let [error, setError] = React.useState(null);
 
-    let amount = +props.lend["amount"].toString() / 100000000;
+    let amount = + props.lend["amount"].toString() / 100000000;
+
 
     async function onSubmit () {
         //点击下一步 先提示本次操作的结果, 如果成功就进入下一步
@@ -20,15 +21,16 @@ export default function PayStep (props) {
 
         let payArg = {
             to: Buffer.from(props.lend.accountIdentifier).toString("hex"),
-            amount: +props.lend.amount.toString()
+            amount: +props.lend.amount.toString(),
+            memo: props.lend.id + ""
         }
         try {
-            console.log(typeof props.setHeigth)
             console.log("pay args is: " + JSON.stringify(payArg))
             const payResult = await window.ic.plug.requestTransfer(payArg);
             console.log("pay result is " + JSON.stringify(payResult));
-            props.setHeigth(payResult["height"]);
+            props.setHeight(payResult["height"]);
             props.nextStep();
+
         } catch (error) {
             console.log("error message is: " + error.message)
             setError(error.message + 'you can click Pay button to retry.')
