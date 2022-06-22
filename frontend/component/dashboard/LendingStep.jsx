@@ -41,7 +41,7 @@ export default function LendingStep (props) {
             desc: props.nftData.desc,
             web: props.nftData.Web,
             availableUtil: Date.parse(state.availableUtil) / 1000,
-            price: { decimals: state.price * 100000000, symbol: "ICP" },
+            price: { decimals: Math.trunc(state.price * 100000000), symbol: "ICP" },
             minPeriod: state.minPeriod
         }
         console.log("perListingArg: " + JSON.stringify(preListingArg))

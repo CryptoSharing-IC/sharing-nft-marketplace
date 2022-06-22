@@ -316,11 +316,11 @@ shared(msg) actor class Marketplace() = self {
                     return #Err(#listingNotEnable);
                 };
                 if((cmd.end - cmd.start)/3600 < 1){
-                    return #Err(#parameterErr);
+                    return #Err(#parameterErr("rent time too short."));
                 };
 
                 if(cmd.end > listing.availableUtil) {
-                    return #Err(#parameterErr);
+                    return #Err(#parameterErr("Out of available time"));
                 };
                 //todo
                 ///遍历所有的lend对象确保 资源可用 租赁时间不重叠
@@ -331,7 +331,7 @@ shared(msg) actor class Marketplace() = self {
                 let lendId = getIdAndIncrementOne();
                 let now = timeNow_();
                
-                let accountIdentifier = Account.accountIdentifier(Principal.fromActor(self), Blob.fromArray(Account.beBytes64(lendId)));
+                let accountIdentifier = Account.accountIdentifier(Principal.fromActor(self), Account.defaultSubaccount());
                 
                 //以整数小时计费
                 let amount: Nat64 = Nat64.fromNat((cmd.end - cmd.start) * listing.price.decimals /3600); 
@@ -378,60 +378,99 @@ shared(msg) actor class Marketplace() = self {
     public func lendBalance(cmd: LendIdCommand) : async Result<Ledger.Tokens, Error> {
         switch(LendRepositories.getLend(lendDB, lendRepository, cmd.id)){
             case(?lend) {
-                let balanceRes : Ledger.Tokens =   await ledgerCanister.account_balance({ account = lend.accountIdentifier });
+                let balanceRes : Ledger.Tokens = await ledgerCanister.account_balance({ account = lend.accountIdentifier });
                 return #Ok(balanceRes);
             };
             case(null) {
                 return #Err(#notFound);
             };
         };
-       
     };
+    public query func getLend(cmd: LendIdCommand) : async Result<LendDomain.LendProfile, Error> {
+           return switch(LendRepositories.getLend(lendDB, lendRepository, cmd.id)){
+            case(?lend) {
+                return #Ok(lend);
+            };
+            case(null) {
+                return #Err(#notFound);
+            };
+        };
+    };
+
+    // public func transferToDefaultAccount(cmd: LendIdCommand) : async Result<Ledger.BlockIndex, Ledger.TransferError> {
+    //     switch(LendRepositories.getLend(lendDB, lendRepository, cmd.id)){
+    //         case(?lend) {
+    //             let transferArgs: Ledger.TransferArgs = {
+    //                 to = Account.accountIdentifier(Principal.fromActor(self), Account.defaultSubaccount());
+    //                 fee = {e8s=10000};
+    //                 memo = lend.id;
+    //                 from_subaccount = ?lend.accountIdentifier;
+    //                 created_at_time = ?{timestamp_nanos = Nat64.fromNat(Int.abs(timeNow_()))};   
+    //                 amount = {e8s = lend.amount - 10000};
+    //             };
+
+    //             return await ledgerCanister.transfer(transferArgs);
+                
+    //         };
+    //         case(null) {
+    //             Prelude.unreachable();
+    //         };
+    //     };
+    // };
     /// 租入 Lend nft
     /// 校验支付信息，成功后 mint nft 并返回 TODO
-    public shared(msg) func notify(cmd: LendIdCommand) : async Result<Nat64, Error> {
+    public shared(msg) func notify(cmd: LendIdCommand, blockIndex: Nat64) : async Result<Nat64, Error> {
         let caller = msg.caller;
         let lendId = cmd.id;
 
         switch(LendRepositories.getLend(lendDB, lendRepository, lendId)) {
             case(?lend) {
-                let subaccountBalance : {e8s: Nat64} = await ledgerCanister.account_balance({account:Blob = lend.accountIdentifier});
+                let getBlockArg : Ledger.GetBlocksArgs = {
+                    start = blockIndex;
+                    length = 1;
+                };
+                let queryBlockResponse : Ledger.QueryBlocksResponse = await ledgerCanister.query_blocks(getBlockArg);
+
+                let block : Ledger.Block = queryBlockResponse.blocks[0];
+                let transaction : Ledger.Transaction = block.transaction;
+                let memo : Ledger.Memo = transaction.memo;
+                if(not Nat64.equal(memo, lend.id)){
+                    return #Err(#parameterErr("memo error."));
+                };
+
+                switch(transaction.operation: ?Ledger.Operation) {
+                    case(?o) {                
+                        switch(o){
+                            case(#Burn(_)){};
+                            case(#Mint(_)){};
+                            case(#Transfer(transfer)){
+                                type Transfer = {
+                                    from : Ledger.AccountIdentifier;
+                                    to : Ledger.AccountIdentifier;
+                                    amount : Ledger.Tokens;
+                                    fee : Ledger.Tokens;
+                                };
+                        
+                               if(not Blob.equal(transfer.to, Account.accountIdentifier(Principal.fromActor(self), Account.defaultSubaccount()))) {
+                                   return #Err(#parameterErr("the target account error."));
+                               };
+                               if(not Nat64.equal(transfer.amount.e8s, lend.amount)) {
+                                   return #Err(#parameterErr("amount error."));
+                               };
+                           };   
+                      };
+                    };
+                    case(null) {
+                        return #Err(#parameterErr("the operation is null, inn query_blocks"));
+                    };
+                };
+                //pay success 
                 
-                if(subaccountBalance.e8s < lend.amount) {
-                    return #Err(#parameterErr)
-                };
-                    //pay success 
-                    //0. 把钱转回主账户 
-                    
-                let transferArgs: Ledger.TransferArgs = {
-                    to = Account.accountIdentifier(Principal.fromActor(self), Account.defaultSubaccount());
-                    fee = {e8s=10000};
-                    memo = lend.id;
-                    from_subaccount = ?lend.accountIdentifier;
-                    created_at_time = ?{timestamp_nanos = Nat64.fromNat(Int.abs(timeNow_()))};   
-                    amount = {e8s = subaccountBalance.e8s - 10000};
-                };
-                type BlockIndex = Nat64;
-                let res:{ #Ok : BlockIndex; #Err : Ledger.TransferError } = await ledgerCanister.transfer(transferArgs);
-                switch(res){
-                    case(#Ok(blockIndex)){};
-                    case(#Err(transferErr)){
-                        let errMsg: Text = switch(transferErr) {
-                            case(#TxTooOld(_)){"TxTooOld"};
-                            case(#BadFee(_)){"BadFee"};
-                            case(#TxDuplicate(_)){"TxDuplicate"};
-                            case(#TxCreatedInFuture(_)){"TxCreatedInFuture"};
-                            case(#InsufficientFunds(_)){"InsufficientFunds"};
-                        };
-                            
-                        return #Err(#transferFailed(errMsg));
-                        };
-                };
-                    //1. 给买家铸造使用权nft, 
+                //1. 给买家铸造使用权nft, 
                     ///////////////
                 let l: ListingDomain.ListingProfile = switch (ListingRepositories.getListing(listingDB, listingRepository, lend.listingId)) {
                     case (?listing) {
-                            listing;
+                        listing;
                     };
                     case (null) {
                         return #Err(#listingNotFound);
@@ -472,7 +511,7 @@ shared(msg) actor class Marketplace() = self {
                     };
                 };
                     
-                    //2. 发放租金
+                //2. 发放租金
                
                 let transferRentArgs: Ledger.TransferArgs = {
                     to = Account.accountIdentifier(lend.nftOwner, Account.defaultSubaccount());
@@ -482,7 +521,8 @@ shared(msg) actor class Marketplace() = self {
                     created_at_time = ?{timestamp_nanos = Nat64.fromNat(Int.abs(timeNow_()))};
                     amount = {e8s = lend.amount * 9 / 10};
                 };
-                let transferRentRes:{ #Ok : BlockIndex; #Err : Ledger.TransferError } = await ledgerCanister.transfer(transferRentArgs);
+
+                let transferRentRes:{ #Ok : Ledger.BlockIndex; #Err : Ledger.TransferError } = await ledgerCanister.transfer(transferRentArgs);
                 switch(transferRentRes){
                     case(#Ok(blockIndex)){
                     };

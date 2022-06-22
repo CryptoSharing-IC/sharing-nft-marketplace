@@ -20,7 +20,7 @@ export default function Lending () {
     //let marketplace = await initMarketplace();
     console.log("request : marketplace finished. ")
     console.log("request tokens start")
-
+    console.log("marketplace default canister is : " + Buffer.from(await marketplace.accountId()).toString("hex"))
     let listedResult = await marketplace.pageListings({
       user: [],
       pageNum: 0,

@@ -23,9 +23,11 @@ export default function PayStep (props) {
             amount: +props.lend.amount.toString()
         }
         try {
+            console.log(typeof props.setHeigth)
             console.log("pay args is: " + JSON.stringify(payArg))
             const payResult = await window.ic.plug.requestTransfer(payArg);
             console.log("pay result is " + JSON.stringify(payResult));
+            props.setHeigth(payResult["height"]);
             props.nextStep();
         } catch (error) {
             console.log("error message is: " + error.message)

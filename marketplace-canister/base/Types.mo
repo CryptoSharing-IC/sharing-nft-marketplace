@@ -67,7 +67,7 @@ module {
         #burnFailed;
         #transferFailed: Text;
         #listingLocked;
-        #parameterErr;
+        #parameterErr: Text;
         #understock;
     };
 

@@ -9,6 +9,7 @@ export default function RentFlow (props) {
     let [lend, setLend] = React.useState(null);
     let [currentStep, setCurrentStep] = React.useState(1);
     let [listId, setListId] = React.useState(-1); //init a invalid number
+    let [height, setHeigth] = React.useState(null);
     let nextStep = () => {
         setCurrentStep(currentStep++ % 4 + 1)
     }
@@ -20,8 +21,8 @@ export default function RentFlow (props) {
                     {
                         {
                             1: <RentStep listing={props.listing} lend={lend} setLend={setLend} nextStep={nextStep}></RentStep>,
-                            2: <PayStep listing={props.listing} lend={lend} setLend={setLend} nextStep={nextStep}></PayStep>,
-                            3: <MintUseNftStep listing={props.listing} lend={lend} setLend={setLend} nextStep={nextStep}></MintUseNftStep>,
+                            2: <PayStep listing={props.listing} lend={lend} setLend={setLend} setHeight={setHeigth} nextStep={nextStep}></PayStep>,
+                            3: <MintUseNftStep listing={props.listing} lend={lend} setLend={setLend} height={height} nextStep={nextStep}></MintUseNftStep>,
                             4: <FinishRentStep listing={props.listing} lend={lend} setLend={setLend} nextStep={nextStep}></FinishRentStep>
                         }[currentStep]
                     }
