@@ -42,7 +42,10 @@ export default function Lending () {
       {res.result && res.result.data.length != 0 && (
         <div>
           <div className='flex justify-center text-xl'>
-            <h1 className='text-lg'>Explore Lenging NFT Collections</h1>
+            <div className='m-6'>
+              <h1 className='text-[30px]'>Explore Lenging NFT Collections</h1>
+            </div>
+
           </div>
           <div className="flex flex-row flex-wrap justify-center gap-10">
             {

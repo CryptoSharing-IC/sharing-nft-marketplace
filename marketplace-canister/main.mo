@@ -1,5 +1,6 @@
 
 import Array "mo:base/Array";
+import Buffer "mo:base/Buffer";
 import Arrays "mo:base/Array";
 import Blob "mo:base/Blob";
 import Prelude "mo:base/Prelude";
@@ -188,14 +189,27 @@ shared(msg) actor class Marketplace() = self {
                     };
                 };
                 
-                let attribute: Sharing.Attribute = {
+                let nftType: Sharing.Attribute = {
                     key = "type";
                     value = "wNFT";
                 };
-            
+                let name: Sharing.Attribute = {
+                    key = "type";
+                    value = l.name;
+                };
+                let desc: Sharing.Attribute = {
+                    key = "type";
+                    value = l.desc;
+                };
+     
+                let attributeBuffer = Buffer.Buffer< Sharing.Attribute>(5);                               
+                attributeBuffer.add(nftType);
+                attributeBuffer.add(name);
+                attributeBuffer.add(desc);                                
+
                 let wTokenMetadata: Sharing.TokenMetadata = {
                     filetype = tokenMetadata.filetype;
-                    attributes = Arrays.make<Sharing.Attribute>(attribute);
+                    attributes = attributeBuffer.toArray();
                     location = tokenMetadata.location;
                 };
                 let wTokenId = switch(await sharingCanister.mint(caller, ?wTokenMetadata)){
@@ -375,17 +389,6 @@ shared(msg) actor class Marketplace() = self {
         await ledgerCanister.account_balance({ account =  Account.accountIdentifier(Principal.fromActor(self), Account.defaultSubaccount()) })
     };
 
-    public func lendBalance(cmd: LendIdCommand) : async Result<Ledger.Tokens, Error> {
-        switch(LendRepositories.getLend(lendDB, lendRepository, cmd.id)){
-            case(?lend) {
-                let balanceRes : Ledger.Tokens = await ledgerCanister.account_balance({ account = lend.accountIdentifier });
-                return #Ok(balanceRes);
-            };
-            case(null) {
-                return #Err(#notFound);
-            };
-        };
-    };
     public query func getLend(cmd: LendIdCommand) : async Result<LendDomain.LendProfile, Error> {
            return switch(LendRepositories.getLend(lendDB, lendRepository, cmd.id)){
             case(?lend) {
@@ -396,27 +399,16 @@ shared(msg) actor class Marketplace() = self {
             };
         };
     };
+    
+    //交易完成
+    public query func pageEnableLend(pageSize: Nat, pageNum: Nat) : async LendRepositories.LendPage{
+        
+        let filter : (Nat64, LendDomain.LendProfile) -> Bool = func (id: Nat64, lend: LendDomain.LendProfile) {
+            return lend.status == #Enable;
+        };
+        return LendRepositories.pageLend(lendDB, lendRepository, pageSize, pageNum, filter, LendDomain.lendOrderUpdateTimeDesc);
+    };
 
-    // public func transferToDefaultAccount(cmd: LendIdCommand) : async Result<Ledger.BlockIndex, Ledger.TransferError> {
-    //     switch(LendRepositories.getLend(lendDB, lendRepository, cmd.id)){
-    //         case(?lend) {
-    //             let transferArgs: Ledger.TransferArgs = {
-    //                 to = Account.accountIdentifier(Principal.fromActor(self), Account.defaultSubaccount());
-    //                 fee = {e8s=10000};
-    //                 memo = lend.id;
-    //                 from_subaccount = ?lend.accountIdentifier;
-    //                 created_at_time = ?{timestamp_nanos = Nat64.fromNat(Int.abs(timeNow_()))};   
-    //                 amount = {e8s = lend.amount - 10000};
-    //             };
-
-    //             return await ledgerCanister.transfer(transferArgs);
-                
-    //         };
-    //         case(null) {
-    //             Prelude.unreachable();
-    //         };
-    //     };
-    // };
     /// 租入 Lend nft
     /// 校验支付信息，成功后 mint nft 并返回 TODO
     public shared(msg) func notify(cmd: LendIdCommand, blockIndex: Nat64) : async Result<Nat64, Error> {
@@ -465,6 +457,7 @@ shared(msg) actor class Marketplace() = self {
                     };
                 };
                 //pay success 
+                //0. 更新lend
                 
                 //1. 给买家铸造使用权nft, 
                     ///////////////
@@ -493,13 +486,36 @@ shared(msg) actor class Marketplace() = self {
                         return #Err(#notFound);
                     };
                 };
-                let attribute: Sharing.Attribute = {
+                let nftType: Sharing.Attribute = {
                     key = "type";
                     value = "uNFT";
                 };
+                let start: Sharing.Attribute = {
+                    key = "start";
+                    value = Nat.toText(lend.start);
+                };
+                let end: Sharing.Attribute = {
+                    key = "end";
+                    value = Nat.toText(lend.start);
+                };
+                let nftOwner: Sharing.Attribute = {
+                    key = "nftOwner";
+                    value = Principal.toText(lend.nftOwner);
+                };
+                let amount: Sharing.Attribute = {
+                    key = "amount";
+                    value = Nat64.toText(lend.amount);
+                };      
+                let attributeBuffer = Buffer.Buffer< Sharing.Attribute>(5);                               
+                attributeBuffer.add(nftType);
+                attributeBuffer.add(start);
+                attributeBuffer.add(end);                                
+                attributeBuffer.add(nftOwner);
+                attributeBuffer.add(amount);
+
                 let wTokenMetadata: Sharing.TokenMetadata = {
                     filetype = tokenMetadata.filetype;
-                    attributes = Arrays.make<Sharing.Attribute>(attribute);
+                    attributes = attributeBuffer.toArray();
                     location = tokenMetadata.location;
                 };
                 let uTokenId = switch(await sharingCanister.mint(caller, ?wTokenMetadata)){
@@ -538,8 +554,26 @@ shared(msg) actor class Marketplace() = self {
                     return #Err(#transferFailed(errMsg));
                     };
                 };
+
+
+                //3. 更新lend
+
+                let lendForUpdate : LendDomain.LendProfile = {
+                    id = lend.id;
+                    listingId = lend.listingId;
+                    owner = lend.owner;
+                    nftOwner = lend.nftOwner;
+                    status = #Enable;
+                    createdAt = lend.createdAt;
+                    updatedAt = timeNow_();
+                    start = lend.start;
+                    end = lend.end;
+                    accountIdentifier = lend.accountIdentifier;
+                    amount = lend.amount;
+                    uNFTId = ?uTokenId;
+                };
+                ignore LendRepositories.updateLend(lendDB, lendRepository, lendForUpdate);
                 return #Ok(lend.id);
-                
             };
             case(null) {
                 return #Err(#notFound);

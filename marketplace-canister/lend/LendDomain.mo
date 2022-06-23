@@ -26,6 +26,7 @@ module {
         end: Nat;
         accountIdentifier: Blob;
         amount: Nat64;
+        uNFTId: ?Nat;
     };
 
     public type LendStatus = {
@@ -53,6 +54,7 @@ module {
             end = end;
             accountIdentifier = accountIdentifier;
             amount = amount;
+            uNFTId = null;
         };
     };
 
