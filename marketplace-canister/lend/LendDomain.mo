@@ -46,7 +46,7 @@ module {
         return {
             id = id ;
             listingId = listId; 
-            owner = owner ;
+            owner = owner;
             nftOwner = nftOwner;
             status = #Pending;
             createdAt = now ;

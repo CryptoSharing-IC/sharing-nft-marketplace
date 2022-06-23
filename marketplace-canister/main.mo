@@ -198,12 +198,20 @@ shared(msg) actor class Marketplace() = self {
                     value = "wNFT";
                 };
                 let name: Sharing.Attribute = {
-                    key = "type";
+                    key = "name";
                     value = l.name;
                 };
                 let desc: Sharing.Attribute = {
-                    key = "type";
+                    key = "desc";
                     value = l.desc;
+                };
+                let originalNftId: Sharing.Attribute = {
+                    key = "originalNft";
+                    value = Nat.toText(l.nftId);
+                };
+                let canisterId : Sharing.Attribute = {
+                    key = "canisterId";
+                    value = l.canisterId;
                 };
      
                 let attributeBuffer = Buffer.Buffer< Sharing.Attribute>(5);                               
