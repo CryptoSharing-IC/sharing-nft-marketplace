@@ -40,7 +40,7 @@ export default function RentedList () {
       {res.result && res.result.data.length != 0 && (
         <div>
           <div className='flex justify-center text-xl'>
-            <h1 className='text-lg'>Explore Rented NFT Collections</h1>
+            <h1 className='text-[30px]'>Explore Rented NFT Collections</h1>
           </div>
           <div className="flex flex-row flex-wrap justify-center gap-10">
             {

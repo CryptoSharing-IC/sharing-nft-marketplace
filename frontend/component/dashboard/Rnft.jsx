@@ -15,6 +15,9 @@ export default function Unft () {
         BigInt.prototype.toJSON = function () { return this.toString() };
         console.log("request init sharing canister")
         let nftCanister = await initSharing();
+        if (!nftCanister) {
+            nftCanister = await initSharing();
+        }
         console.log("request : initSharing finished. ")
         const userPrincipal = await window.ic?.plug?.agent?.getPrincipal()
         console.log("request tokens start")
@@ -38,15 +41,17 @@ export default function Unft () {
                 Redeemed
             </Link>
 
-            <Link className="tab lg: tab-lg tab-active" to="/dashboard/unft">
-                Rented
+            <Link className="tab lg: tab-lg" to="/dashboard/unft">
+                UNFT
+            </Link>
+            <Link className="tab lg: tab-lg tab-active" to="/dashboard/rnft">
+                RNFT
             </Link>
         </div>
         {res.loading && <Progress></Progress>}
         {res.error && <Error errorMsg={res.error.message}></Error>}
         {res.result && (
             <>
-
                 <div className="flex flex-row flex-wrap justify-center gap-10 mb-500">
                     {
                         res.result.filter((item, index, array) => {
@@ -75,10 +80,11 @@ export default function Unft () {
                                             <div className="card-body items-center text-center">
                                                 <h2 className="card-title">"Your RNFT"</h2>
                                                 <p>can use this nft to redeem you original nft.</p>
-
+                                                <p>original nft contract is: {attributes.canisterId}</p>
+                                                <p>original nft id is: {attributes.originalNft}</p>
                                             </div>
                                         </div>
-                                        <ListingFlow nftData={{ ...attributes, index: e.index, Web: e.metadata[0].location.Web }}></ListingFlow>
+
                                     </div>
                                 )
                             })

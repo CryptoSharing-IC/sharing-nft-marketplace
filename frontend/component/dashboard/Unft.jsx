@@ -39,7 +39,10 @@ export default function Unft () {
             </Link>
 
             <Link className="tab lg: tab-lg tab-active" to="/dashboard/unft">
-                Rented
+                UNFT
+            </Link>
+            <Link className="tab lg: tab-lg" to="/dashboard/rnft">
+                RNFT
             </Link>
         </div>
         {res.loading && <Progress></Progress>}
@@ -74,11 +77,15 @@ export default function Unft () {
                                             </figure>
                                             <div className="card-body items-center text-center">
                                                 <h2 className="card-title">"Your uNFT"</h2>
-                                                <p>can use this nft to on behalf of the original nft.</p>
+                                                <p>this nft can on behalf of the original nft.</p>
+                                                <p>rent start: {new Date(Number(attributes.start) * 1000).toISOString().substring(0, 16)} </p>
+                                                <p>rent end: {new Date(Number(attributes.end) * 1000).toISOString().substring(0, 16)} </p>
+
+                                                <p>total amount: {Number(attributes.amount) / 100000000} icp </p>
 
                                             </div>
                                         </div>
-                                        <ListingFlow nftData={{ ...attributes, index: e.index, Web: e.metadata[0].location.Web }}></ListingFlow>
+
                                     </div>
                                 )
                             })
