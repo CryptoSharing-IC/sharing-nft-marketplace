@@ -21,14 +21,12 @@ export default function RentedList () {
     console.log("request : marketplace finished. ")
     console.log("request tokens start")
 
-    let listedResult = await marketplace.pageListings({
-      user: [],
-      pageNum: 0,
-      pageSize: 10,
-      status: { Redeemed: null }
-    });
-    console.log("result is : " + JSON.stringify(listedResult));
-    return listedResult;
+    let enableLendRes = await marketplace.pageEnableLend(
+      10,
+      0,
+    );
+    console.log("enable lend list result is : " + JSON.stringify(enableLendRes));
+    return enableLendRes;
   };
 
   //const [nfts, setNfts] = React.useState([])
@@ -47,8 +45,6 @@ export default function RentedList () {
           <div className="flex flex-row flex-wrap justify-center gap-10">
             {
               res.result.data.map((e, index) => {
-
-                console.log(new Date((+ e.availableUtil.toString()) * 1000).toISOString())
                 return (
                   <div key={index}>
                     <div className="card w-80 bg-base-100 shadow-xl">
@@ -60,12 +56,14 @@ export default function RentedList () {
                         {/* <div className='flex flex-col grow justify-center justify-items-start '> */}
 
                         <p>{e.desc}</p>
-                        <p>Price: {e.price.decimals + " icp/hour"}</p>
 
-                        <p>Available Util:{new Date((+ e.availableUtil.toString()) * 1000).toISOString().substring(0, 16)} </p>
-                        {/* </div> */}
-
+                        <p>rent start: {new Date(Number(e.start) * 1000).toISOString().substring(0, 16)} </p>
+                        <p>rent end: {new Date(Number(e.end) * 1000).toISOString().substring(0, 16)} </p>
+                        <p>create at: {new Date(Number(e.createdAt) / 1000000000).toISOString().substring(0, 16)} </p>
+                        <p>total amount: {Number(e.amount) / 100000000} icp </p>
+                        <p>uNFT ID is: {e.uNFTId[0]}</p>
                       </div>
+
                     </div>
                   </div>
                 )

@@ -27,6 +27,7 @@ module {
         accountIdentifier: Blob;
         amount: Nat64;
         uNFTId: ?Nat;
+        web: Text;
     };
 
     public type LendStatus = {
@@ -41,7 +42,7 @@ module {
         end: Nat;
     };
 
-    public func createProfile(listId: Nat64, id: LendId, owner: Principal, nftOwner: Principal, now: Timestamp, start: Nat, end: Nat, accountIdentifier: Blob, amount: Nat64) : LendProfile {
+    public func createProfile(listId: Nat64, id: LendId, owner: Principal, nftOwner: Principal, now: Timestamp, start: Nat, end: Nat, accountIdentifier: Blob, amount: Nat64, web: Text) : LendProfile {
         return {
             id = id ;
             listingId = listId; 
@@ -55,6 +56,7 @@ module {
             accountIdentifier = accountIdentifier;
             amount = amount;
             uNFTId = null;
+            web = web;
         };
     };
 

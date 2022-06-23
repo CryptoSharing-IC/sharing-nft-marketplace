@@ -351,9 +351,10 @@ shared(msg) actor class Marketplace() = self {
                
                 let accountIdentifier = Account.accountIdentifier(Principal.fromActor(self), Account.defaultSubaccount());
                 
+                
                 //以整数小时计费
                 let amount: Nat64 = Nat64.fromNat((cmd.end - cmd.start) * listing.price.decimals /3600); 
-                let lendOrder = LendDomain.createProfile(listing.id, lendId, caller, listing.owner ,now, cmd.start, cmd.end, accountIdentifier, amount);
+                let lendOrder = LendDomain.createProfile(listing.id, lendId, caller, listing.owner ,now, cmd.start, cmd.end, accountIdentifier, amount, listing.web);
                 lendDB := LendRepositories.saveLend(lendDB, lendRepository, lendOrder);
                 #Ok(lendOrder);
             };
@@ -627,6 +628,7 @@ shared(msg) actor class Marketplace() = self {
                     accountIdentifier = lend.accountIdentifier;
                     amount = lend.amount;
                     uNFTId = ?uTokenId;
+                    web = lend.web;
                 };
                 lendDB := LendRepositories.updateLend(lendDB, lendRepository, lendForUpdate).0;
                 return #Ok(lend.id);
