@@ -48,8 +48,8 @@ export default function Unft () {
         </div>
         {res.loading && <Progress></Progress>}
         {res.error && <Error errorMsg={res.error.message}></Error>}
-        {res.result && (res.result.length == 0) && <NoData></NoData>}
-        {res.result && (res.result.length != 0)(
+        {res.result && res.result.length == 0 && <NoData></NoData>}
+        {res.result && res.result.length != 0 && (
             <>
 
                 <div className="flex flex-row flex-wrap justify-center gap-10 mb-500">

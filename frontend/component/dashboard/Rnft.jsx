@@ -6,36 +6,44 @@ import { AppContext } from "../../App"
 import { useAsync } from 'react-async-hook';
 import Progress from "../Progress"
 import Error from "../Error"
+import NoData from '../NoData';
+import getMarketplaceCanister from '../../utils/getMarketplactCanister';
+import getSharingCanister from "../../utils/getSharingCanister";
 
 export default function Unft () {
 
     const { initSharing, initMarketplace } = React.useContext(AppContext);
-    let [redeemStatus, setRedeemStatus] = React.useState("Pending");
-    let [redeemError, setRedeemError] = React.useState(null);
+    let redeemError = null;
+
+    let [redeemStatus, setRedeemStatus] = React.useState("Pending")
 
     const redeem = async (listingId) => {
+        setRedeemStatus("Pending")
+        redeemError = "";
+
         console.log("Start redeem , the linsting id is: " + listingId)
         console.log("start init marketplace canister agent")
-        let marketplace = await initMarketplace();
-        if (!marketplace) {
-            marketplace = await initMarketplace();
-        }
+        let marketplace = await getMarketplaceCanister();
+
         console.log("finish init marketplace canister ")
-        try {
-            let redeemRes = await marketplace.redeem({ id: listingId })
-            redeemRes.Ok ? (setRedeemStatus("completed") && setRedeemError(null)) : (setRedeemStatus("Error") && setRedeemError(redeemRes.Err))
-        } catch (error) {
-            setRedeemStatus("Error") && setRedeemError(error.message)
+        // try {
+        console.log("start redeem ")
+        let redeemRes = await marketplace.redeem({ id: Number(listingId) })
+        console.log("redeem result is : " + JSON.stringify(redeemRes))
+        if (redeemRes.hasOwnProperty("Ok")) {
+            setRedeemStatus("completed")
+            redeemError = null;
+            console.log("the api return Ok")
+        } else {
+            setRedeemStatus("Error")
+            redeemError = redeemRes.Err
         }
     };
-
     const fetchNfts = async () => {
         BigInt.prototype.toJSON = function () { return this.toString() };
         console.log("request init sharing canister")
-        let nftCanister = await initSharing();
-        if (!nftCanister) {
-            nftCanister = await initSharing();
-        }
+        let nftCanister = await getSharingCanister();
+
         console.log("request : initSharing finished. ")
         const userPrincipal = await window.ic?.plug?.agent?.getPrincipal()
         console.log("request tokens start")
@@ -66,6 +74,9 @@ export default function Unft () {
                 RNFT
             </Link>
         </div>
+        {res.result && (res.result = res.result.filter((item, index, array) => {
+            return item["metadata"][0]["attributes"][0]["value"] == "wNFT"
+        })) && ""}
         {res.result && console.log(JSON.stringify(res))}
         {res.loading && <Progress></Progress>}
         {res.error && <Error errorMsg={res.error.message}></Error>}
@@ -108,31 +119,33 @@ export default function Unft () {
                                         <input type="checkbox" id="redeem-modal" className="modal-toggle" />
                                         <div className="modal">
                                             <div className="modal-box">
-                                                {redeemStatus == "Pending" && <div>
-                                                    <h3 className="font-bold text-lg">The original NFT is being redeemed</h3>
-                                                    <progress className="progress w-56"></progress>
-                                                </div>}
-
-                                                {redeemStatus == "completed" && <div>
-                                                    <h3 className="font-bold text-lg">Redemption completed, you can view the original NFT in dashboard Idle panel.</h3>
-                                                    <div className="modal-action">
-                                                        <label for="redeem-modal" className="btn">Close</label>
-                                                    </div>
-                                                </div>}
                                                 {
-                                                    redeemStatus == "Error" && (
-                                                        <div>
-                                                            <div className="alert alert-error">
-                                                                <div>
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                                                    <span>{redeemError}</span>
+                                                    {
+                                                        "Pending": (
+                                                            <div >
+                                                                <h3 className="font-bold text-lg">The original NFT is being redeemed</h3>
+                                                                <progress className="progress w-56 ml-20"></progress>
+                                                            </div>),
+                                                        "completed": (
+                                                            <div>
+                                                                <h3 className="font-bold text-lg">Redemption completed, you can view the original NFT in dashboard Idle panel.</h3>
+                                                                <div className="modal-action">
+                                                                    <label for="redeem-modal" className="btn">Close</label>
                                                                 </div>
-                                                            </div>
-                                                            <div className="modal-action">
-                                                                <label for="redeem-modal" className="btn">Close</label>
-                                                            </div>
-                                                        </div>
-                                                    )
+                                                            </div>),
+                                                        "Error":
+                                                            (<div>
+                                                                <div className="alert alert-error">
+                                                                    <div>
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                                        <span>{JSON.stringify(redeemError)}</span>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="modal-action">
+                                                                    <label for="redeem-modal" className="btn">Close</label>
+                                                                </div>
+                                                            </div>),
+                                                    }[redeemStatus]
                                                 }
                                             </div>
                                         </div>
