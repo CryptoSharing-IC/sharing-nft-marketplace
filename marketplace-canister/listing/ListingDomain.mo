@@ -135,6 +135,24 @@ module {
 
     };
 
+    public func updateListingStatus(l: ListingProfile, status: ListingStatus) : ListingProfile{
+        return {
+            id = l.id ;
+            canisterId = l.canisterId ;
+            nftId = l.nftId ;
+            name = l.name;
+            desc = l.desc;
+            web = l.web;
+            availableUtil = l.availableUtil ;
+            price = l.price ;
+            owner = l.owner ;
+            status = status;
+            createdAt = l.createdAt ;
+            updatedAt = l.updatedAt;
+            redeemNftId = l.redeemNftId;            
+        }
+    };
+
     public type ListingPageQuery = {
         user: ?Principal;
         pageSize: Nat;

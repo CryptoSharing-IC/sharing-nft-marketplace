@@ -240,7 +240,7 @@ shared(msg) actor class Marketplace() = self {
                     };
                 };
                 let listingProfile: ListingDomain.ListingProfile = ListingDomain.updateListingStaked(l, ?wTokenId);
-                listingDB := ListingRepositories.updateListing(listingDB, listingRepository, listingProfile);
+                listingDB := ListingRepositories.updateListing(listingDB, listingRepository, listingProfile).0;
                 return #Ok(wTokenId);
             };
             case (null) {
@@ -290,6 +290,10 @@ shared(msg) actor class Marketplace() = self {
                 let nftCansiter : Dip721.NFToken = actor(l.canisterId); 
                 switch(await nftCansiter.transfer(redeemOwner, l.nftId)){
                     case(#Ok(txId)){
+
+                        //更新listing对象
+                       let listingProfile: ListingDomain.ListingProfile = ListingDomain.updateListingStatus(l, #Redeemed);
+                       listingDB := ListingRepositories.updateListing(listingDB, listingRepository, listingProfile).0; 
                         return #Ok(l.id);
                     };
                     case(#Err(err)){
@@ -302,11 +306,6 @@ shared(msg) actor class Marketplace() = self {
                         return #Err(#transferFailed(errMsg))
                     };
                 };
-
-                //更新listing对象
-                let listingProfile: ListingDomain.ListingProfile = ListingDomain.updateListingStatus(l, #Redeemed);
-                listingDB := ListingRepositories.updateListing(listingDB, listingRepository, listingProfile);
-
             };
             case (null) {
                 return #Err(#notFound);
