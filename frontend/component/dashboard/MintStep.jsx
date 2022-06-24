@@ -5,7 +5,7 @@ import canisterIds from "../../../canister_ids.json"
 import { idlFactory } from "../../canisters/marketplace/marketplace.did.js"
 
 export default function MintStep (props) {
-    const [err, setErr] = React.useState("");
+    const [err, setErr] = React.useState(null);
     const { initMarketplace } = React.useContext(AppContext);
 
     React.useEffect(() => {
@@ -15,7 +15,7 @@ export default function MintStep (props) {
             //通知后端, nft质押完成
             const res = await canister.listingNFT({ id: props.listId });
             console.log("mint result is: " + JSON.stringify(res))
-            res["Ok"] ? props.nextStep() : setErr(res["Err"] || "Failed to Mint!");
+            res["Ok"] ? props.nextStep() && setErr(null) : setErr(res["Err"] || "Failed to Mint!");
         })()
     }, [])
 

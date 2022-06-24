@@ -10,6 +10,21 @@ import Error from "../Error"
 export default function Unft () {
 
     const { initSharing } = React.useContext(AppContext);
+    let [redeemStatus, setRedeemStatus] = React.useState("Pending");
+    let [redeemError, setRedeemError] = React.useState(null);
+
+    const redeem = async (listingId) => {
+        let nftCanister = await initSharing();
+        if (!nftCanister) {
+            nftCanister = await initSharing();
+        }
+        try {
+            let redeemRes = await nftCanister.redeem({ id: listingId })
+            redeemRes.Ok ? (setRedeemStatus("completed") && setRedeemError(null)) : (setRedeemStatus("Error") && setRedeemError(redeemRes.Err))
+        } catch (error) {
+            setRedeemStatus("Error") && setRedeemError(error.message)
+        }
+    };
 
     const fetchNfts = async () => {
         BigInt.prototype.toJSON = function () { return this.toString() };
@@ -48,9 +63,11 @@ export default function Unft () {
                 RNFT
             </Link>
         </div>
+        {res.result && console.log(JSON.stringify(res))}
         {res.loading && <Progress></Progress>}
         {res.error && <Error errorMsg={res.error.message}></Error>}
-        {res.result && (
+        {res.result && (res.result.length == 0) && <NoData></NoData>}
+        {res.result && (res.result.length != 0) && (
             <>
                 <div className="flex flex-row flex-wrap justify-center gap-10 mb-500">
                     {
@@ -83,8 +100,33 @@ export default function Unft () {
                                                 <p>original nft contract is: {attributes.canisterId}</p>
                                                 <p>original nft id is: {attributes.originalNft}</p>
                                             </div>
+                                            <label for="redeem-modal" onClick={async () => { redeem(attributes.listingId) }} className="btn modal-button">Redeem</label>
                                         </div>
+                                        <input type="checkbox" id="redeem-modal" className="modal-toggle" />
+                                        <div className="modal">
+                                            <div className="modal-box">
+                                                {redeemStatus == "Pending" && <div>
+                                                    <h3 className="font-bold text-lg">The original NFT is being redeemed</h3>
+                                                    <progress className="progress w-56"></progress>
+                                                </div>}
 
+                                                {redeemStatus == "completed" && <div>
+                                                    <h3 className="font-bold text-lg">Redemption completed, you can view the original NFT in dashboard Idle panel.</h3>
+                                                    <div className="modal-action">
+                                                        <label for="redeem-modal" className="btn">Close</label>
+                                                    </div>
+                                                </div>}
+                                                {
+                                                    redeemStatus == "Error" &&
+                                                    <div className="alert alert-error">
+                                                        <div>
+                                                            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                            <span>Redeem Failed!</span>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
                                     </div>
                                 )
                             })

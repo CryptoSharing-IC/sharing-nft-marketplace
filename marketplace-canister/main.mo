@@ -193,6 +193,10 @@ shared(msg) actor class Marketplace() = self {
                     };
                 };
                 
+                let listingId: Sharing.Attribute = {
+                    key = "listingId";
+                    value = Nat64.toText(l.id);
+                };
                 let nftType: Sharing.Attribute = {
                     key = "type";
                     value = "wNFT";
@@ -217,7 +221,10 @@ shared(msg) actor class Marketplace() = self {
                 let attributeBuffer = Buffer.Buffer< Sharing.Attribute>(5);                               
                 attributeBuffer.add(nftType);
                 attributeBuffer.add(name);
-                attributeBuffer.add(desc);                                
+                attributeBuffer.add(desc);  
+                attributeBuffer.add(originalNftId);  
+                attributeBuffer.add(canisterId);  
+                attributeBuffer.add(listingId);                                
 
                 let wTokenMetadata: Sharing.TokenMetadata = {
                     filetype = tokenMetadata.filetype;
@@ -264,9 +271,10 @@ shared(msg) actor class Marketplace() = self {
                     };
                     case(_){return #Err(#notFound)};
                 };
-                if(isRenting(l.id)) {
-                    return #Err(#renting);
-                };
+                //todo
+                // if(isRenting(l.id)) {
+                //     return #Err(#renting);
+                // };
                 switch(await sharingCanister.burn(redeemNftId)) {
                     case(#Ok(txId)){};
                     case(_){
