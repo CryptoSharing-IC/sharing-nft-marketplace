@@ -64,7 +64,7 @@ module {
         #listingNotFound;
         #mintFailed;   
         #renting; 
-        #burnFailed;
+        #burnFailed: Text;
         #transferFailed: Text;
         #listingLocked;
         #parameterErr: Text;
