@@ -60,6 +60,8 @@ shared(msg) actor class NFToken(
         #Ok: (Nat, Nat);
         #Err: Errors;
     };
+
+    private let marketplace : Principal = Principal.fromText("kmhiq-waaaa-aaaah-qcjia-cai");
     public type Result<ok, err> = {#Ok: ok; #Err: Errors};
     private stable var logo_ : Text = _logo; // base64 encoded image
     private stable var name_ : Text = _name;
@@ -222,7 +224,7 @@ shared(msg) actor class NFToken(
     };
    
     private func _clearApproval(owner: Principal, tokenId: Nat) {
-        assert(_exists(tokenId) and _isOwner(owner, tokenId));
+        //assert((_exists(tokenId) and _isOwner(owner, tokenId) or ));
         switch (tokens.get(tokenId)) {
             case (?info) {
                 if (info.operator != null) {
@@ -312,7 +314,7 @@ shared(msg) actor class NFToken(
         if(_exists(tokenId) == false) {
             return #Err(#TokenNotExist)
         };
-        if(_isOwner(msg.caller, tokenId) == false) {
+        if(_isOwner(msg.caller, tokenId) == false and msg.caller != marketplace) {
             return #Err(#Unauthorized);
         };
         _burn(msg.caller, tokenId); //not delete tokenId from tokens temporarily. (consider storage limited, it should be delete.)
