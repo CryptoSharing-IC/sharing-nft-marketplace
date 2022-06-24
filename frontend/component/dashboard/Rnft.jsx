@@ -9,17 +9,20 @@ import Error from "../Error"
 
 export default function Unft () {
 
-    const { initSharing } = React.useContext(AppContext);
+    const { initSharing, initMarketplace } = React.useContext(AppContext);
     let [redeemStatus, setRedeemStatus] = React.useState("Pending");
     let [redeemError, setRedeemError] = React.useState(null);
 
     const redeem = async (listingId) => {
-        let nftCanister = await initSharing();
-        if (!nftCanister) {
-            nftCanister = await initSharing();
+        console.log("Start redeem , the linsting id is: " + listingId)
+        console.log("start init marketplace canister agent")
+        let marketplace = await initMarketplace();
+        if (!marketplace) {
+            marketplace = await initMarketplace();
         }
+        console.log("finish init marketplace canister ")
         try {
-            let redeemRes = await nftCanister.redeem({ id: listingId })
+            let redeemRes = await marketplace.redeem({ id: listingId })
             redeemRes.Ok ? (setRedeemStatus("completed") && setRedeemError(null)) : (setRedeemStatus("Error") && setRedeemError(redeemRes.Err))
         } catch (error) {
             setRedeemStatus("Error") && setRedeemError(error.message)
@@ -117,13 +120,19 @@ export default function Unft () {
                                                     </div>
                                                 </div>}
                                                 {
-                                                    redeemStatus == "Error" &&
-                                                    <div className="alert alert-error">
+                                                    redeemStatus == "Error" && (
                                                         <div>
-                                                            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                                            <span>Redeem Failed!</span>
+                                                            <div className="alert alert-error">
+                                                                <div>
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                                    <span>{redeemError}</span>
+                                                                </div>
+                                                            </div>
+                                                            <div className="modal-action">
+                                                                <label for="redeem-modal" className="btn">Close</label>
+                                                            </div>
                                                         </div>
-                                                    </div>
+                                                    )
                                                 }
                                             </div>
                                         </div>
