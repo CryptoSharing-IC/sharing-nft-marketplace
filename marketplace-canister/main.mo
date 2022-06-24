@@ -240,7 +240,7 @@ shared(msg) actor class Marketplace() = self {
                     };
                 };
                 let listingProfile: ListingDomain.ListingProfile = ListingDomain.updateListingStaked(l, ?wTokenId);
-                listingDB := ListingRepositories.saveListing(listingDB, listingRepository, listingProfile);
+                listingDB := ListingRepositories.updateListing(listingDB, listingRepository, listingProfile);
                 return #Ok(wTokenId);
             };
             case (null) {
@@ -277,8 +277,14 @@ shared(msg) actor class Marketplace() = self {
                 // };
                 switch(await sharingCanister.burn(redeemNftId)) {
                     case(#Ok(txId)){};
-                    case(_){
-                        return #Err(#burnFailed);
+                    case(#Err(err)){
+                        let errMsg: Text = switch(err){
+                            case (#Unauthorized) {"Unauthorized"};
+                            case (#TokenNotExist) {"TokenNotExist"};
+                            case (#InvalidOperator) {"InvalidOperator"};
+                            case (#UserNotExist) {"UserNotExist"};
+                        };
+                        return #Err(#burnFailed(errMsg))
                     };
                 };
                 let nftCansiter : Dip721.NFToken = actor(l.canisterId); 
@@ -296,6 +302,10 @@ shared(msg) actor class Marketplace() = self {
                         return #Err(#transferFailed(errMsg))
                     };
                 };
+
+                //更新listing对象
+                let listingProfile: ListingDomain.ListingProfile = ListingDomain.updateListingStatus(l, #Redeemed);
+                listingDB := ListingRepositories.updateListing(listingDB, listingRepository, listingProfile);
 
             };
             case (null) {
