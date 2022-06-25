@@ -1,15 +1,18 @@
 import React from 'react'
 import { Link } from "react-router-dom"
 import ListingFlow from './ListingFlow';
+import EventBus from '../../utils/EventBus';
 
 import { AppContext } from "../../App"
 import { useAsync } from 'react-async-hook';
 import Progress from "../Progress"
 import Error from "../Error"
+import { set } from 'react-hook-form';
 
 export function IdleCardList () {
 
     const { initDip721 } = React.useContext(AppContext);
+    let [res, setRes] = React.useState(null)
 
     const fetchNfts = async () => {
         BigInt.prototype.toJSON = function () { return this.toString() };
@@ -23,8 +26,14 @@ export function IdleCardList () {
         return nftsRes;
     };
 
-    //const [nfts, setNfts] = React.useState([])
-    let res = useAsync(fetchNfts, []);
+
+    const init = () => {
+        setRes(useAsync(fetchNfts, []))
+    };
+    React.useEffect(() => {
+        EventBus.addListener("updateIdeleList", init)
+        init();
+    }, []);
 
     return (<div>
         <div className="tabs tabs-boxed">

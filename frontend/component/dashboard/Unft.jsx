@@ -7,15 +7,15 @@ import { useAsync } from 'react-async-hook';
 import Progress from "../Progress"
 import Error from "../Error"
 import NoData from '../NoData';
+import getSharingCanister from "../../utils/getSharingCanister";
 
 export default function Unft () {
 
-    const { initSharing } = React.useContext(AppContext);
 
     const fetchNfts = async () => {
         BigInt.prototype.toJSON = function () { return this.toString() };
         console.log("request init sharing canister")
-        let nftCanister = await initSharing();
+        let nftCanister = await getSharingCanister();
         console.log("request : initSharing finished. ")
         const userPrincipal = await window.ic?.plug?.agent?.getPrincipal()
         console.log("request tokens start")

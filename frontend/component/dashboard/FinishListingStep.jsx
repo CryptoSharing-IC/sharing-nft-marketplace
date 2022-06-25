@@ -1,6 +1,8 @@
 import React from 'react'
+import EventBus from '../../utils/EventBus'
 
 export default function FinishListingStep () {
+
     return (
         <div className='flex flex-col'>
             <ul className="steps justify-center">
@@ -16,7 +18,7 @@ export default function FinishListingStep () {
                     <h2>Finished! now your nft is on lending list!</h2>
                 </div>
                 <div className="modal-action justify-end mr-2">
-                    <label htmlFor="listing-step" className="btn" >完成</label>
+                    <label htmlFor="listing-step" className="btn" onClick={EventBus.emit("updateIdleList")}>完成</label>
                 </div>
             </div>
         </div>
