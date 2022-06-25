@@ -430,53 +430,15 @@ shared(msg) actor class Marketplace() = self {
         };
     };
 
+
+
     // Trie.empty<LendId, LendProfile>
-    public query func pageEnableLend(pageSize : Nat, pageNum: Nat) : async PageHelper.Page<LendDomain.LendProfile>{
+    // public query func pageEnableLend(pageSize : Nat, pageNum: Nat) : async PageHelper.Page<LendDomain.LendProfile>{
 
-        let filter : (Nat64, LendDomain.LendProfile) -> Bool = func (id: Nat64, lend: LendDomain.LendProfile) {
-            // switch(lend.status){
-            //     case(#Enable) {
-            //         true;
-            //     };
-            //     case(_) {
-            //         false;
-            //     };
-            // };
-            // if(lend.status == #Enable) {
-            //     return true;
-            // };
-            // return false;
-            return true;
-        };
-        let trieres : Trie.Trie<Nat64, LendDomain.LendProfile> = Trie.filter<Nat64, LendDomain.LendProfile>(lendDB, filter);
-        let lendArray = Trie.toArray<Nat64, LendDomain.LendProfile,LendDomain.LendProfile>(trieres, func (id: Nat64, v: LendDomain.LendProfile):LendDomain.LendProfile{v});
-        let enableLendArray: [LendDomain.LendProfile] = Array.filter<LendDomain.LendProfile>(lendArray, func (lend: LendDomain.LendProfile) {
-            if(lend.status == #Enable) {
-                return true;
-            };
-            return false;
-        });
-
-        let sortedData = List.fromArray<LendDomain.LendProfile>(Utils.sort(enableLendArray, LendDomain.lendOrderUpdateTimeDesc));
-        let remainning = List.drop<LendDomain.LendProfile>(sortedData,  pageNum * pageSize);
-        let paging = List.take<LendDomain.LendProfile>(remainning, pageSize);
-        let totalCount = List.size<LendDomain.LendProfile>(sortedData);
- 
-        {
-            data = List.toArray<LendDomain.LendProfile>(paging);
-            pageSize = pageSize;
-            pageNum = pageNum;
-            totalCount = totalCount;
-        }
-    };
-    
-    // //交易完成
-    // public query func pageEnableLend(pageSize: Nat, pageNum: Nat) : async LendRepositories.LendPage{
-        
     //     let filter : (Nat64, LendDomain.LendProfile) -> Bool = func (id: Nat64, lend: LendDomain.LendProfile) {
     //         // switch(lend.status){
     //         //     case(#Enable) {
-    //         //         false;
+    //         //         true;
     //         //     };
     //         //     case(_) {
     //         //         false;
@@ -488,8 +450,50 @@ shared(msg) actor class Marketplace() = self {
     //         // return false;
     //         return true;
     //     };
-    //     return LendRepositories.pageLend(lendDB, lendRepository, 100, pageNum, filter, LendDomain.lendOrderUpdateTimeDesc);
+    //     let trieres : Trie.Trie<Nat64, LendDomain.LendProfile> = Trie.filter<Nat64, LendDomain.LendProfile>(lendDB, filter);
+    //     let lendArray = Trie.toArray<Nat64, LendDomain.LendProfile,LendDomain.LendProfile>(trieres, func (id: Nat64, v: LendDomain.LendProfile):LendDomain.LendProfile{v});
+    //     let enableLendArray: [LendDomain.LendProfile] = Array.filter<LendDomain.LendProfile>(lendArray, func (lend: LendDomain.LendProfile) {
+    //         if(lend.status == #Enable) {
+    //             return true;
+    //         };
+    //         return false;
+    //     });
+
+    //     let sortedData = List.fromArray<LendDomain.LendProfile>(Utils.sort(enableLendArray, LendDomain.lendOrderUpdateTimeDesc));
+    //     let remainning = List.drop<LendDomain.LendProfile>(sortedData,  pageNum * pageSize);
+    //     let paging = List.take<LendDomain.LendProfile>(remainning, pageSize);
+    //     let totalCount = List.size<LendDomain.LendProfile>(sortedData);
+ 
+    //     {
+    //         data = List.toArray<LendDomain.LendProfile>(paging);
+    //         pageSize = pageSize;
+    //         pageNum = pageNum;
+    //         totalCount = totalCount;
+    //     }
     // };
+    public query func pageUserLend(user: Principal, pageSize, pageNum): async LendRepositories.LendPage {        
+        let filter : (Nat64, LendDomain.LendProfile) -> Bool = func (id: Nat64, lend: LendDomain.LendProfile) {
+            if(lend.owner == user) {
+                return true;
+            };
+            return false;
+        };
+        return LendRepositories.pageLend(lendDB, lendRepository, pageSize, pageNum, filter, LendDomain.lendOrderUpdateTimeDesc); 
+    };
+    public query func pageEnableLend(pageSize: Nat, pageNum: Nat) : async LendRepositories.LendPage{
+        
+        let filter : (Nat64, LendDomain.LendProfile) -> Bool = func (id: Nat64, lend: LendDomain.LendProfile) {
+            switch(lend.status){
+                case(#Enable) {
+                    true;
+                };
+                case(_) {
+                    false;
+                };
+            };
+        };
+        return LendRepositories.pageLend(lendDB, lendRepository, pageSize, pageNum, filter, LendDomain.lendOrderUpdateTimeDesc);
+    };
 
     /// 租入 Lend nft
     /// 校验支付信息，成功后 mint nft 并返回 TODO
